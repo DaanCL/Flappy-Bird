@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Flappy Bird">
+<meta name="theme-color" content="#100a24">
+<title>Flappy Bird</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    height: -webkit-fill-available;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: #100a24;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+  body { position: fixed; inset: 0; }
+  #game-wrap {
+    position: relative;
+    width: min(100vw, 66.6667vh);
+    aspect-ratio: 2 / 3;
+    max-width: 400px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  /* Op telefoons: volledig scherm, geen rand */
+  @media (max-width: 500px) {
+    #game-wrap { border-radius: 0; box-shadow: none; }
+  }
+  canvas#canvas { display: block; width: 100%; height: 100%; background: #70c5ce; touch-action: none; }
+
+  /* Overlay schermen */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: #fff;
+    text-align: center;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(2px);
+    transition: opacity .25s;
+    overflow-y: auto;
+    padding:
+      max(14px, env(safe-area-inset-top))
+      max(14px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+  }
+  .screen.hidden { opacity: 0; pointer-events: none; }
+
+  h1 {
+    font-size: 42px;
+    letter-spacing: 1px;
+    text-shadow: 3px 3px 0 #d35400, 5px 5px 0 rgba(0,0,0,0.3);
+    color: #ffd54a;
+  }
+  h2 { font-size: 30px; text-shadow: 2px 2px 0 rgba(0,0,0,0.4); }
+  p { font-size: 15px; opacity: .9; }
+
+  .btn {
+    cursor: pointer;
+    border: none;
+    padding: 13px 32px;
+    font-size: 19px;
+    font-weight: 700;
+    border-radius: 999px;
+    background: #ffd54a;
+    color: #5a3d00;
+    box-shadow: 0 5px 0 #c79b1f;
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #c79b1f; }
+  .btn.secondary { background: #fff; color: #2c3e50; box-shadow: 0 5px 0 #b3b3b3; }
+
+  .difficulty { display: flex; gap: 10px; }
+  .diff-btn {
+    cursor: pointer;
+    border: 2px solid #fff;
+    background: transparent;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    transition: .15s;
+  }
+  .diff-btn.active { background: #fff; color: #2c3e50; }
+
+  .score-box { font-size: 22px; font-weight: 700; }
+  .best { font-size: 16px; opacity: .85; }
+
+  /* Muntbalk */
+  .coinbar {
+    font-size: 20px; font-weight: 800; color: #ffd54a;
+    background: rgba(0,0,0,0.3); padding: 6px 18px; border-radius: 999px;
+  }
+
+  /* Winkel */
+  .tabs { display: flex; gap: 8px; }
+  .tab {
+    cursor: pointer; border: 2px solid #fff; background: transparent; color: #fff;
+    padding: 6px 20px; border-radius: 999px; font-size: 15px; font-weight: 700; transition: .15s;
+  }
+  .tab.active { background: #fff; color: #2c3e50; }
+
+  .shop-items { display: flex; flex-direction: column; gap: 12px; width: 310px; max-width: 90%; }
+  .item {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 14px; padding: 10px 12px;
+  }
+  .item.selected { border-color: #ffd54a; background: rgba(255,213,74,0.16); }
+  .item-prev { width: 56px; height: 56px; border-radius: 10px; background: rgba(0,0,0,0.25); flex: 0 0 auto; }
+  .item-info { flex: 1; text-align: left; min-width: 0; }
+  .item-name { font-size: 16px; font-weight: 700; }
+  .item-sub { font-size: 13px; opacity: .8; }
+  .item-btn {
+    cursor: pointer; border: none; border-radius: 999px; padding: 8px 14px;
+    font-size: 14px; font-weight: 700; background: #ffd54a; color: #5a3d00; flex: 0 0 auto;
+  }
+  .item-btn.owned { background: #fff; color: #2c3e50; }
+  .item-btn.selected { background: #5ec64a; color: #fff; cursor: default; }
+  .item-btn.locked { background: #e74c3c; color: #fff; }
+  .item-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+  /* Profielen / login */
+  .playerbar {
+    font-size: 16px; font-weight: 700; color: #fff;
+    background: rgba(0,0,0,0.3); padding: 6px 16px; border-radius: 999px;
+  }
+  .textlink {
+    background: none; border: none; color: #fff; opacity: .85;
+    text-decoration: underline; cursor: pointer; font-size: 14px; font-weight: 600;
+  }
+  .profile-list { display: flex; flex-direction: column; gap: 10px; width: 300px; max-width: 88%; }
+  .profile-row { display: flex; gap: 8px; align-items: stretch; }
+  .profile-pick {
+    flex: 1; display: flex; flex-direction: column; align-items: flex-start;
+    padding: 10px 18px; font-size: 18px; line-height: 1.1;
+  }
+  .profile-pick small { font-size: 12px; font-weight: 600; opacity: .7; color: #5a3d00; }
+  .profile-del {
+    flex: 0 0 auto; width: 44px; border: none; border-radius: 14px; cursor: pointer;
+    background: rgba(231,76,60,0.85); color: #fff; font-size: 18px; font-weight: 700;
+  }
+  .new-profile { display: flex; gap: 8px; width: 300px; max-width: 88%; }
+  .new-profile input {
+    flex: 1; min-width: 0; border: 2px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.12);
+    color: #fff; border-radius: 999px; padding: 10px 16px; font-size: 15px; outline: none;
+  }
+  .new-profile input::placeholder { color: rgba(255,255,255,0.6); }
+  .new-profile .btn { padding: 10px 18px; font-size: 15px; }
+</style>
+</head>
+<body>
+<div id="game-wrap">
+  <canvas id="canvas" width="400" height="600"></canvas>
+
+  <!-- Login / spelerselectie -->
+  <div id="login" class="screen hidden">
+    <h1>Flappy Bird</h1>
+    <p>Kies je speler</p>
+    <div id="profile-list" class="profile-list"></div>
+    <div class="new-profile">
+      <input id="new-name" type="text" maxlength="16" placeholder="Nieuwe spelersnaam" autocomplete="off">
+      <button class="btn" id="add-profile">+ Toevoegen</button>
+    </div>
+  </div>
+
+  <!-- Menu -->
+  <div id="menu" class="screen">
+    <h1>Flappy Bird</h1>
+    <div class="playerbar">👤 <span id="menu-name">—</span> · 🪙 <span id="menu-coins">0</span></div>
+    <div class="difficulty" id="difficulty">
+      <button class="diff-btn" data-diff="easy">Makkelijk</button>
+      <button class="diff-btn active" data-diff="normal">Normaal</button>
+      <button class="diff-btn" data-diff="hard">Moeilijk</button>
+    </div>
+    <button class="btn" id="play-btn">▶ Spelen</button>
+    <button class="btn secondary" id="shop-btn">🛒 Winkel</button>
+    <p class="best">Beste score: <span id="menu-best">0</span></p>
+    <button class="textlink" id="switch-btn">Wissel speler</button>
+  </div>
+
+  <!-- Winkel -->
+  <div id="shop" class="screen hidden">
+    <h2>Winkel</h2>
+    <div class="coinbar">🪙 <span id="shop-coins">0</span></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="skins">Vogels</button>
+      <button class="tab" data-tab="themes">Thema's</button>
+    </div>
+    <div id="shop-items" class="shop-items"></div>
+    <button class="btn secondary" id="shop-back">← Terug</button>
+  </div>
+
+  <!-- Game over -->
+  <div id="gameover" class="screen hidden">
+    <h2>Game Over</h2>
+    <div class="score-box">Score: <span id="final-score">0</span></div>
+    <div class="best">Beste: <span id="best-score">0</span></div>
+    <div class="best">🪙 verzameld: <span id="run-coins">0</span></div>
+    <button class="btn" id="retry-btn">↻ Opnieuw</button>
+    <button class="btn secondary" id="menu-btn">Menu</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+// Logische speelgrootte blijft 400x600; backing store schaalt mee met het
+// scherm (retina) zodat alles scherp blijft op iPhone.
+const W = 400, H = 600;
+const DPR = Math.min(window.devicePixelRatio || 1, 3);
+canvas.width = W * DPR;
+canvas.height = H * DPR;
+ctx.scale(DPR, DPR);
+
+const menuEl = document.getElementById('menu');
+const shopEl = document.getElementById('shop');
+const gameoverEl = document.getElementById('gameover');
+
+// Moeilijkheidsinstellingen
+const DIFFS = {
+  easy:   { gap: 190, gravity: 0.17, jump: -5.4, speed: 1.8, interval: 120, maxVy: 6.5 },
+  normal: { gap: 160, gravity: 0.22, jump: -6.0, speed: 2.2, interval: 105, maxVy: 7.0 },
+  hard:   { gap: 130, gravity: 0.28, jump: -6.6, speed: 2.8, interval: 90,  maxVy: 7.5 },
+};
+let diff = 'normal';
+
+// Skins & thema's (prijs in munten; 0 = gratis)
+const SKINS = {
+  classic: { name: 'Klassieke Vogel', price: 0,   desc: 'De gele klassieker' },
+  knight:  { name: 'Black Knight',    price: 750, desc: 'Donkere ridder met cape' },
+};
+const THEMES = {
+  classic: { name: 'Klassiek',        price: 0,    desc: 'Heldere lucht & groene buizen' },
+  dark:    { name: 'Donker Kasteel',  price: 1000, desc: 'Nacht, maan & kasteelmuren' },
+};
+
+// --- Opgeslagen voortgang (per speler-profiel) ---
+function loadList(key, def) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return Array.isArray(v) ? v : def.slice(); }
+  catch (e) { return def.slice(); }
+}
+
+let profiles = {};
+try { profiles = JSON.parse(localStorage.getItem('flappyProfiles')) || {}; } catch (e) { profiles = {}; }
+let activeProfile = localStorage.getItem('flappyActiveProfile');
+
+// Eenmalige migratie van de oude (profielloze) opslag naar 'Speler 1'
+if (Object.keys(profiles).length === 0 && localStorage.getItem('flappyCoins') !== null) {
+  profiles['Speler 1'] = {
+    coins: parseInt(localStorage.getItem('flappyCoins') || '0', 10),
+    best: parseInt(localStorage.getItem('flappyBest') || '0', 10),
+    ownedSkins: loadList('flappySkins', ['classic']),
+    ownedThemes: loadList('flappyThemes', ['classic']),
+    selSkin: localStorage.getItem('flappySelSkin') || 'classic',
+    selTheme: localStorage.getItem('flappySelTheme') || 'classic',
+  };
+  activeProfile = 'Speler 1';
+  localStorage.setItem('flappyProfiles', JSON.stringify(profiles));
+}
+
+// Huidige spelergegevens (door de rest van het spel gebruikt)
+let best = 0, coins = 0;
+let ownedSkins = ['classic'], ownedThemes = ['classic'];
+let selectedSkin = 'classic', selectedTheme = 'classic';
+
+function defaultProfileData() {
+  return { coins: 0, best: 0, ownedSkins: ['classic'], ownedThemes: ['classic'], selSkin: 'classic', selTheme: 'classic' };
+}
+
+// schrijf de huidige gegevens terug naar het actieve profiel
+function persist() {
+  if (!activeProfile) return;
+  profiles[activeProfile] = {
+    coins: coins, best: best,
+    ownedSkins: ownedSkins, ownedThemes: ownedThemes,
+    selSkin: selectedSkin, selTheme: selectedTheme,
+  };
+  localStorage.setItem('flappyProfiles', JSON.stringify(profiles));
+  localStorage.setItem('flappyActiveProfile', activeProfile);
+}
+
+// laad het actieve profiel in de globale variabelen
+function loadActive() {
+  const d = profiles[activeProfile] || defaultProfileData();
+  coins = d.coins || 0;
+  best = d.best || 0;
+  ownedSkins = Array.isArray(d.ownedSkins) ? d.ownedSkins.slice() : ['classic'];
+  ownedThemes = Array.isArray(d.ownedThemes) ? d.ownedThemes.slice() : ['classic'];
+  if (!ownedSkins.includes('classic')) ownedSkins.unshift('classic');
+  if (!ownedThemes.includes('classic')) ownedThemes.unshift('classic');
+  selectedSkin = ownedSkins.includes(d.selSkin) ? d.selSkin : 'classic';
+  selectedTheme = ownedThemes.includes(d.selTheme) ? d.selTheme : 'classic';
+}
+
+let state = 'menu'; // menu | shop | ready | playing | dead
+let bird, pipes, frame, score, settings, runCoins = 0;
+
+function reset() {
+  settings = DIFFS[diff];
+  bird = { x: 90, y: H/2, vy: 0, r: 14, rot: 0 };
+  pipes = [];
+  frame = 0;
+  score = 0;
+  runCoins = 0;
+}
+
+function spawnPipe() {
+  const margin = 60;
+  const top = margin + Math.random() * (H - settings.gap - margin*2 - 80);
+  pipes.push({ x: W, top: top, gap: settings.gap, passed: false, coin: true });
+}
+
+function flap() {
+  if (state === 'ready') { state = 'playing'; bird.vy = settings.jump; }
+  else if (state === 'playing') { bird.vy = settings.jump; }
+}
+
+function startGame() {
+  reset();
+  state = 'ready';
+  menuEl.classList.add('hidden');
+  shopEl.classList.add('hidden');
+  gameoverEl.classList.add('hidden');
+}
+
+function die() {
+  state = 'dead';
+  if (score > best) best = score;
+  persist();
+  document.getElementById('final-score').textContent = score;
+  document.getElementById('best-score').textContent = best;
+  document.getElementById('run-coins').textContent = runCoins;
+  document.getElementById('menu-best').textContent = best;
+  updateCoinUI();
+  gameoverEl.classList.remove('hidden');
+}
+
+function toMenu() {
+  state = 'menu';
+  gameoverEl.classList.add('hidden');
+  shopEl.classList.add('hidden');
+  menuEl.classList.remove('hidden');
+}
+
+// ====================== TEKENEN ======================
+
+// vaste sterrenposities (eenmalig, voor donker thema)
+const stars = [];
+for (let i = 0; i < 45; i++) {
+  stars.push({ x: Math.random()*W, y: Math.random()*(H-220), r: Math.random()*1.3+0.3, t: Math.random()*Math.PI*2 });
+}
+
+// --- Achtergrond ---
+function drawBackground() {
+  if (selectedTheme === 'dark') drawBgDark(); else drawBgClassic();
+}
+
+function drawBgClassic() {
+  ctx.fillStyle = '#70c5ce';
+  ctx.fillRect(0, 0, W, H);
+  // zon
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,228,120,0.8)'; ctx.shadowBlur = 30;
+  ctx.fillStyle = '#ffe07a';
+  ctx.beginPath(); ctx.arc(W-72, 90, 32, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+  // wolken
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  for (let i = 0; i < 3; i++) {
+    const cx = ((i*160 - frame*0.3) % (W+120)) + (i*40);
+    const x = ((cx % (W+120)) + (W+120)) % (W+120) - 60;
+    ctx.beginPath();
+    ctx.arc(x, 80 + i*30, 24, 0, Math.PI*2);
+    ctx.arc(x+28, 80 + i*30, 30, 0, Math.PI*2);
+    ctx.arc(x+58, 80 + i*30, 22, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function drawBgDark() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#100a24');
+  g.addColorStop(0.55, '#241640');
+  g.addColorStop(1, '#3a2658');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  // sterren
+  for (const s of stars) {
+    const a = 0.4 + 0.4 * Math.sin(frame*0.05 + s.t);
+    ctx.fillStyle = 'rgba(255,255,255,' + a.toFixed(2) + ')';
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
+  }
+  // maan
+  ctx.save();
+  ctx.shadowColor = 'rgba(210,200,255,0.8)'; ctx.shadowBlur = 28;
+  ctx.fillStyle = '#e9e3ff';
+  ctx.beginPath(); ctx.arc(W-72, 88, 32, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = 'rgba(170,160,205,0.45)';
+  ctx.beginPath(); ctx.arc(W-82, 80, 6, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(W-60, 96, 4.5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(W-70, 100, 3, 0, Math.PI*2); ctx.fill();
+  // kasteel-silhouet
+  drawDistantCastle();
+  // mist
+  for (let i = 0; i < 3; i++) {
+    const cx = ((i*170 - frame*0.25) % (W+140)) + (i*40);
+    const x = ((cx % (W+140)) + (W+140)) % (W+140) - 70;
+    ctx.fillStyle = 'rgba(120,95,170,0.18)';
+    ctx.beginPath();
+    ctx.arc(x, 150 + i*40, 26, 0, Math.PI*2);
+    ctx.arc(x+30, 150 + i*40, 34, 0, Math.PI*2);
+    ctx.arc(x+62, 150 + i*40, 24, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function drawDistantCastle() {
+  const y0 = H - 50;
+  ctx.fillStyle = '#160e2c';
+  ctx.fillRect(0, y0-46, W, 46);
+  for (let x = 0; x < W; x += 22) ctx.fillRect(x, y0-54, 13, 10);
+  const towers = [40, 150, 280, 360];
+  for (const tx of towers) {
+    ctx.fillRect(tx, y0-86, 38, 86);
+    for (let m = 0; m < 3; m++) ctx.fillRect(tx + m*14, y0-94, 9, 10);
+  }
+}
+
+// --- Grond ---
+function drawGround() {
+  if (selectedTheme === 'dark') drawGroundDark(); else drawGroundClassic();
+}
+
+function drawGroundClassic() {
+  const gy = H - 50;
+  ctx.fillStyle = '#ded895';
+  ctx.fillRect(0, gy, W, 50);
+  ctx.fillStyle = '#5ec64a';
+  ctx.fillRect(0, gy, W, 12);
+  // scrollend gras-randje
+  ctx.fillStyle = '#4aa838';
+  const off = (frame * (settings ? settings.speed : 2)) % 24;
+  for (let x = -off; x < W; x += 24) ctx.fillRect(x, gy+8, 12, 4);
+}
+
+function drawGroundDark() {
+  const gy = H - 50;
+  const g = ctx.createLinearGradient(0, gy, 0, H);
+  g.addColorStop(0, '#2a2438');
+  g.addColorStop(1, '#13101c');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, gy, W, 50);
+  ctx.fillStyle = '#3c3556';
+  ctx.fillRect(0, gy, W, 6);
+  ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+  ctx.lineWidth = 2;
+  const off = (frame * (settings ? settings.speed : 2)) % 28;
+  for (let x = -off; x < W; x += 28) {
+    ctx.beginPath(); ctx.moveTo(x, gy+6); ctx.lineTo(x, H); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.moveTo(0, gy+26); ctx.lineTo(W, gy+26); ctx.stroke();
+}
+
+// --- Buizen / muren ---
+function drawPipes() {
+  if (selectedTheme === 'dark') drawPipesDark(); else drawPipesClassic();
+}
+
+function drawPipesClassic() {
+  const w = 60;
+  for (const p of pipes) {
+    const by = p.top + p.gap;
+    ctx.fillStyle = '#5ec64a'; ctx.strokeStyle = '#3e8e30'; ctx.lineWidth = 3;
+    ctx.fillRect(p.x, 0, w, p.top); ctx.strokeRect(p.x, 0, w, p.top);
+    ctx.fillRect(p.x-4, p.top-22, w+8, 22); ctx.strokeRect(p.x-4, p.top-22, w+8, 22);
+    ctx.fillRect(p.x, by, w, H - by); ctx.strokeRect(p.x, by, w, H - by);
+    ctx.fillRect(p.x-4, by, w+8, 22); ctx.strokeRect(p.x-4, by, w+8, 22);
+    // glanslijn
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillRect(p.x+8, 0, 7, p.top-22);
+    ctx.fillRect(p.x+8, by+22, 7, H-by-22);
+  }
+}
+
+// stenen muur met metselwerk
+function stoneFill(x, y, w, h) {
+  if (h <= 0) return;
+  const g = ctx.createLinearGradient(x, 0, x+w, 0);
+  g.addColorStop(0, '#7c7686');
+  g.addColorStop(0.5, '#5b5566');
+  g.addColorStop(1, '#403b4a');
+  ctx.fillStyle = g;
+  ctx.fillRect(x, y, w, h);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  ctx.strokeStyle = 'rgba(0,0,0,0.38)';
+  ctx.lineWidth = 2;
+  const bh = 18, bw = w / 2;
+  for (let yy = Math.floor(y/bh)*bh; yy < y+h; yy += bh) {
+    ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x+w, yy); ctx.stroke();
+    const stagger = ((Math.round(yy/bh)) % 2) ? bw/2 : 0;
+    for (let xx = x + stagger; xx < x+w; xx += bw) {
+      ctx.beginPath(); ctx.moveTo(xx, yy); ctx.lineTo(xx, yy+bh); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawMerlons(x, y, w, h) {
+  const mW = 13, nW = 9, step = mW + nW;
+  for (let xx = x; xx < x + w; xx += step) {
+    const bw = Math.min(mW, x + w - xx);
+    stoneFill(xx, y, bw, h);
+  }
+}
+
+function drawPipesDark() {
+  const w = 60, capH = 16, teeth = 9;
+  for (const p of pipes) {
+    const by = p.top + p.gap;
+    stoneFill(p.x, 0, w, p.top - capH);
+    stoneFill(p.x-5, p.top - capH, w+10, capH - teeth);
+    drawMerlons(p.x-5, p.top - teeth, w+10, teeth);
+    stoneFill(p.x, by + capH, w, H - (by + capH));
+    stoneFill(p.x-5, by + teeth, w+10, capH - teeth);
+    drawMerlons(p.x-5, by, w+10, teeth);
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(p.x, 0, w, p.top - capH);
+    ctx.strokeRect(p.x, by + capH, w, H - (by + capH));
+  }
+}
+
+// --- Munten in het spel ---
+function drawCoins() {
+  for (const p of pipes) {
+    if (!p.coin) continue;
+    const cx = p.x + 30, cy = p.top + p.gap/2;
+    const sx = Math.abs(Math.cos(frame * 0.1)) * 0.85 + 0.15; // draaiing
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(sx, 1);
+    ctx.fillStyle = '#ffcf33'; ctx.strokeStyle = '#c98f10'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffe07a';
+    ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#c98f10';
+    ctx.font = 'bold 12px Segoe UI'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('★', 0, 1);
+    ctx.restore();
+  }
+  ctx.textBaseline = 'alphabetic';
+}
+
+// --- Vogel (skin-afhankelijk) ---
+// Tekent de vogel op (0,0) gericht naar rechts; bruikbaar voor spel én previews.
+function drawBirdShape(c, skin, anim) {
+  const r = 14;
+  const flap = Math.sin(anim * 0.35);
+  if (skin === 'knight') {
+    // cape
+    const cw = 3 + flap * 2;
+    c.fillStyle = '#3a1d5c';
+    c.beginPath();
+    c.moveTo(-4, -8);
+    c.quadraticCurveTo(-20 - cw, -4 + flap*3, -22 - cw, 10 + flap*4);
+    c.quadraticCurveTo(-14, 6, -6, 12);
+    c.quadraticCurveTo(-2, 2, -4, -8);
+    c.fill();
+    // vleugel
+    c.save(); c.translate(-2, 0); c.rotate(flap * 0.5);
+    c.fillStyle = '#15151c'; c.strokeStyle = '#6b2fb3'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(0, 0);
+    c.quadraticCurveTo(-16, -10, -22, 2);
+    c.quadraticCurveTo(-14, 4, 0, 6);
+    c.closePath(); c.fill(); c.stroke();
+    c.restore();
+    // harnas
+    const g = c.createLinearGradient(0, -r, 0, r);
+    g.addColorStop(0, '#2c2c3a'); g.addColorStop(1, '#121218');
+    c.fillStyle = g;
+    c.beginPath(); c.arc(0, 0, r, 0, Math.PI*2); c.fill();
+    c.strokeStyle = '#000'; c.lineWidth = 2; c.stroke();
+    // embleem
+    c.fillStyle = 'rgba(142,68,173,0.6)';
+    c.beginPath(); c.moveTo(-2, 2); c.lineTo(4, -1); c.lineTo(2, 8); c.lineTo(-4, 5); c.closePath(); c.fill();
+    // helm
+    c.fillStyle = '#1c1c26';
+    c.beginPath(); c.arc(4, -5, 10, Math.PI*1.05, Math.PI*2.05);
+    c.lineTo(13, -4); c.quadraticCurveTo(6, -2, -4, -3); c.closePath(); c.fill();
+    c.strokeStyle = '#000'; c.lineWidth = 1.5; c.stroke();
+    // hoorns
+    c.fillStyle = '#0c0c10';
+    c.beginPath(); c.moveTo(-1, -12); c.quadraticCurveTo(-8, -20, -3, -24); c.quadraticCurveTo(-2, -18, 3, -13); c.fill();
+    c.beginPath(); c.moveTo(8, -12); c.quadraticCurveTo(16, -19, 12, -24); c.quadraticCurveTo(10, -18, 5, -13); c.fill();
+    // visier
+    c.fillStyle = '#000'; c.fillRect(2, -6, 11, 3.5);
+    // gloeiende ogen
+    c.shadowColor = '#b06bff'; c.shadowBlur = 8; c.fillStyle = '#d9b3ff';
+    c.beginPath(); c.arc(6, -4.2, 1.4, 0, Math.PI*2); c.fill();
+    c.beginPath(); c.arc(11, -4.2, 1.4, 0, Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+  } else {
+    // klassieke gele vogel
+    const wy = 2 + flap * 3;
+    c.fillStyle = '#ffd54a';
+    c.beginPath(); c.arc(0, 0, r, 0, Math.PI*2); c.fill();
+    c.strokeStyle = '#d4a017'; c.lineWidth = 2; c.stroke();
+    // buik
+    c.fillStyle = '#fff4cf';
+    c.beginPath(); c.arc(1, 5, r*0.62, 0, Math.PI*2); c.fill();
+    // vleugel
+    c.fillStyle = '#fff'; c.strokeStyle = '#d4a017'; c.lineWidth = 1.5;
+    c.beginPath(); c.ellipse(-3, wy, 8, 5, flap*0.3, 0, Math.PI*2); c.fill(); c.stroke();
+    // oog
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(7, -5, 5, 0, Math.PI*2); c.fill();
+    c.fillStyle = '#000'; c.beginPath(); c.arc(9, -5, 2.5, 0, Math.PI*2); c.fill();
+    // snavel
+    c.fillStyle = '#e8772e';
+    c.beginPath(); c.moveTo(12, 0); c.lineTo(22, 2); c.lineTo(12, 6); c.fill();
+  }
+}
+
+function drawBird() {
+  ctx.save();
+  ctx.translate(bird.x, bird.y);
+  ctx.rotate(bird.rot);
+  drawBirdShape(ctx, selectedSkin, frame);
+  ctx.restore();
+}
+
+function drawReady() {
+  if (state !== 'ready') return;
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.textAlign = 'center';
+  ctx.font = 'bold 30px Segoe UI, sans-serif';
+  ctx.strokeText('Klaar?', W/2, H/2 - 90); ctx.fillText('Klaar?', W/2, H/2 - 90);
+  ctx.font = 'bold 18px Segoe UI, sans-serif';
+  ctx.strokeText('Tik / spatie om te starten', W/2, H/2 - 55);
+  ctx.fillText('Tik / spatie om te starten', W/2, H/2 - 55);
+}
+
+function drawScore() {
+  if (state === 'playing') {
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
+    ctx.font = 'bold 48px Segoe UI, sans-serif'; ctx.textAlign = 'center';
+    ctx.strokeText(score, W/2, 80); ctx.fillText(score, W/2, 80);
+  }
+}
+
+function drawHud() {
+  if (state !== 'playing' && state !== 'ready') return;
+  // muntteller deze ronde, linksboven
+  ctx.save();
+  ctx.translate(22, 30);
+  ctx.fillStyle = '#ffcf33'; ctx.strokeStyle = '#c98f10'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#c98f10'; ctx.font = 'bold 11px Segoe UI'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('★', 0, 1);
+  ctx.restore();
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
+  ctx.font = 'bold 20px Segoe UI'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.strokeText(runCoins, 38, 30); ctx.fillText(runCoins, 38, 30);
+  ctx.textBaseline = 'alphabetic';
+}
+
+// ====================== GAME LOOP ======================
+function update() {
+  if (state === 'ready') {
+    frame++;
+    bird.y = H/2 + Math.sin(frame * 0.1) * 8;
+    bird.rot = 0;
+  }
+  if (state === 'playing') {
+    frame++;
+    bird.vy += settings.gravity;
+    if (bird.vy > settings.maxVy) bird.vy = settings.maxVy;
+    bird.y += bird.vy;
+    const targetRot = Math.max(-0.5, Math.min(1.4, bird.vy * 0.09));
+    bird.rot += (targetRot - bird.rot) * 0.15;
+
+    if (frame % settings.interval === 0) spawnPipe();
+
+    const groundY = H - 50;
+    const w = 60;
+    for (const p of pipes) {
+      p.x -= settings.speed;
+      if (!p.passed && p.x + w < bird.x) { p.passed = true; score++; }
+      // munt oppakken
+      if (p.coin) {
+        const cx = p.x + 30, cy = p.top + p.gap/2;
+        const dx = bird.x - cx, dy = bird.y - cy;
+        if (dx*dx + dy*dy < (bird.r + 11) * (bird.r + 11)) {
+          p.coin = false; coins++; runCoins++;
+          persist();
+          updateCoinUI();
+        }
+      }
+      // botsing
+      if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + w) {
+        if (bird.y - bird.r < p.top || bird.y + bird.r > p.top + p.gap) die();
+      }
+    }
+    pipes = pipes.filter(p => p.x + w > -10);
+
+    if (bird.y + bird.r > groundY) { bird.y = groundY - bird.r; die(); }
+    if (bird.y - bird.r < 0) { bird.y = bird.r; bird.vy = 0; }
+  }
+}
+
+function render() {
+  drawBackground();
+  drawPipes();
+  drawCoins();
+  drawGround();
+  if (state === 'ready' || state === 'playing' || state === 'dead') drawBird();
+  drawReady();
+  drawHud();
+  drawScore();
+}
+
+function loop() { update(); render(); requestAnimationFrame(loop); }
+
+// ====================== WINKEL ======================
+let shopTab = 'skins';
+
+function updateCoinUI() {
+  document.getElementById('menu-coins').textContent = coins;
+  const sc = document.getElementById('shop-coins');
+  if (sc) sc.textContent = coins;
+}
+
+function openShop() {
+  menuEl.classList.add('hidden');
+  shopEl.classList.remove('hidden');
+  renderShop();
+}
+function closeShop() {
+  shopEl.classList.add('hidden');
+  menuEl.classList.remove('hidden');
+}
+
+function drawSkinPreview(c, skin) {
+  c.clearRect(0, 0, 56, 56);
+  c.save();
+  c.translate(30, 30);
+  c.scale(1.05, 1.05);
+  drawBirdShape(c, skin, 0);
+  c.restore();
+}
+
+function drawThemePreview(c, theme) {
+  const w = 56, h = 56;
+  if (theme === 'dark') {
+    const g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#100a24'); g.addColorStop(1, '#3a2658');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#e9e3ff'; c.beginPath(); c.arc(45, 11, 5, 0, Math.PI*2); c.fill();
+    c.fillStyle = '#5b5566'; c.fillRect(16, 0, 12, 19); c.fillRect(16, 39, 12, h-39);
+    c.fillStyle = '#13101c'; c.fillRect(0, h-8, w, 8);
+  } else {
+    c.fillStyle = '#70c5ce'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#fff';
+    c.beginPath(); c.arc(13, 13, 5, 0, Math.PI*2); c.arc(19, 13, 6, 0, Math.PI*2); c.fill();
+    c.fillStyle = '#5ec64a'; c.fillRect(34, 0, 12, 19); c.fillRect(34, 39, 12, h-39);
+    c.fillStyle = '#ded895'; c.fillRect(0, h-8, w, 8);
+    c.fillStyle = '#5ec64a'; c.fillRect(0, h-8, w, 3);
+  }
+}
+
+function renderShop() {
+  updateCoinUI();
+  const wrap = document.getElementById('shop-items');
+  wrap.innerHTML = '';
+  const isSkin = shopTab === 'skins';
+  const defs = isSkin ? SKINS : THEMES;
+  const owned = isSkin ? ownedSkins : ownedThemes;
+  const sel = isSkin ? selectedSkin : selectedTheme;
+
+  for (const id in defs) {
+    const d = defs[id];
+    const isOwned = owned.includes(id);
+    const isSel = sel === id;
+
+    const item = document.createElement('div');
+    item.className = 'item' + (isSel ? ' selected' : '');
+
+    const cv = document.createElement('canvas');
+    cv.width = 56; cv.height = 56; cv.className = 'item-prev';
+    const c = cv.getContext('2d');
+    if (isSkin) drawSkinPreview(c, id); else drawThemePreview(c, id);
+
+    const info = document.createElement('div');
+    info.className = 'item-info';
+    const nm = document.createElement('div'); nm.className = 'item-name'; nm.textContent = d.name;
+    const sub = document.createElement('div'); sub.className = 'item-sub';
+    sub.textContent = isOwned ? d.desc : ('🪙 ' + d.price);
+    info.appendChild(nm); info.appendChild(sub);
+
+    const btn = document.createElement('button');
+    btn.className = 'item-btn';
+    if (isSel) {
+      btn.textContent = '✓ Geselecteerd'; btn.classList.add('selected'); btn.disabled = true;
+    } else if (isOwned) {
+      btn.textContent = 'Kies'; btn.classList.add('owned');
+      btn.onclick = () => selectItem(isSkin, id);
+    } else if (coins >= d.price) {
+      btn.textContent = 'Unlock';
+      btn.onclick = () => buyItem(isSkin, id);
+    } else {
+      btn.textContent = '🔒 ' + d.price; btn.classList.add('locked'); btn.disabled = true;
+    }
+
+    item.appendChild(cv); item.appendChild(info); item.appendChild(btn);
+    wrap.appendChild(item);
+  }
+}
+
+function buyItem(isSkin, id) {
+  const d = (isSkin ? SKINS : THEMES)[id];
+  if (coins < d.price) return;
+  coins -= d.price;
+  (isSkin ? ownedSkins : ownedThemes).push(id);
+  selectItem(isSkin, id); // direct selecteren na aankoop (persist gebeurt daar)
+}
+
+function selectItem(isSkin, id) {
+  if (isSkin) selectedSkin = id; else selectedTheme = id;
+  persist();
+  renderShop();
+}
+
+// ====================== INPUT & KNOPPEN ======================
+function onInput(e) {
+  if (e.code !== 'Space' && e.code !== 'ArrowUp') return;
+  if (state !== 'ready' && state !== 'playing') return; // laat typen in velden ongemoeid
+  e.preventDefault();
+  flap();
+}
+window.addEventListener('keydown', onInput);
+canvas.addEventListener('mousedown', () => { if (state === 'ready' || state === 'playing') flap(); });
+canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if (state === 'ready' || state === 'playing') flap(); }, { passive: false });
+
+document.getElementById('play-btn').addEventListener('click', startGame);
+document.getElementById('retry-btn').addEventListener('click', startGame);
+document.getElementById('menu-btn').addEventListener('click', toMenu);
+document.getElementById('shop-btn').addEventListener('click', openShop);
+document.getElementById('shop-back').addEventListener('click', closeShop);
+
+document.querySelectorAll('.diff-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.diff-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    diff = b.dataset.diff;
+  });
+});
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    shopTab = t.dataset.tab;
+    renderShop();
+  });
+});
+
+// ====================== PROFIELEN / LOGIN ======================
+const loginEl = document.getElementById('login');
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+function showLogin() {
+  state = 'menu';
+  menuEl.classList.add('hidden');
+  shopEl.classList.add('hidden');
+  gameoverEl.classList.add('hidden');
+  loginEl.classList.remove('hidden');
+  renderProfiles();
+}
+
+function renderProfiles() {
+  const list = document.getElementById('profile-list');
+  list.innerHTML = '';
+  const names = Object.keys(profiles);
+  if (names.length === 0) {
+    const e = document.createElement('p');
+    e.className = 'hint';
+    e.textContent = 'Nog geen spelers — maak er hieronder een aan.';
+    list.appendChild(e);
+  }
+  names.forEach(name => {
+    const d = profiles[name] || defaultProfileData();
+    const row = document.createElement('div'); row.className = 'profile-row';
+    const pick = document.createElement('button'); pick.className = 'btn profile-pick';
+    pick.innerHTML = '<span>' + escapeHtml(name) + '</span><small>🪙 ' + (d.coins||0) + '  ·  🏆 ' + (d.best||0) + '</small>';
+    pick.onclick = () => chooseProfile(name);
+    const del = document.createElement('button'); del.className = 'profile-del'; del.textContent = '✕'; del.title = 'Verwijderen';
+    del.onclick = (ev) => { ev.stopPropagation(); if (confirm('Speler "' + name + '" verwijderen?')) deleteProfile(name); };
+    row.appendChild(pick); row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+function chooseProfile(name) {
+  activeProfile = name;
+  loadActive();
+  persist();
+  document.getElementById('menu-name').textContent = name;
+  document.getElementById('menu-best').textContent = best;
+  updateCoinUI();
+  loginEl.classList.add('hidden');
+  menuEl.classList.remove('hidden');
+}
+
+function addProfile() {
+  const inp = document.getElementById('new-name');
+  const name = (inp.value || '').trim().slice(0, 16);
+  if (!name) { inp.focus(); return; }
+  if (!profiles[name]) {
+    profiles[name] = defaultProfileData();
+    localStorage.setItem('flappyProfiles', JSON.stringify(profiles));
+  }
+  inp.value = '';
+  chooseProfile(name);
+}
+
+function deleteProfile(name) {
+  delete profiles[name];
+  localStorage.setItem('flappyProfiles', JSON.stringify(profiles));
+  if (activeProfile === name) {
+    activeProfile = null;
+    localStorage.removeItem('flappyActiveProfile');
+  }
+  renderProfiles();
+}
+
+document.getElementById('switch-btn').addEventListener('click', showLogin);
+document.getElementById('add-profile').addEventListener('click', addProfile);
+document.getElementById('new-name').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addProfile();
+});
+
+// ====================== INIT ======================
+reset();
+loop();
+if (activeProfile && profiles[activeProfile]) {
+  loadActive();
+  document.getElementById('menu-name').textContent = activeProfile;
+  document.getElementById('menu-best').textContent = best;
+  updateCoinUI();
+} else {
+  showLogin();
+}
+</script>
+</body>
+</html>
