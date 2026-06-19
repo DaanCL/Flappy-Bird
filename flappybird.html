@@ -336,21 +336,37 @@ function loadActive() {
 }
 
 let state = 'menu'; // menu | shop | ready | playing | dead
-let bird, pipes, frame, score, settings, runCoins = 0;
+let bird, pipes, frame, score, settings, runCoins = 0, lastGapCenter = null;
 
 function reset() {
   settings = DIFFS[diff];
-  bird = { x: 90, y: H/2, vy: 0, r: 14, rot: 0 };
+  bird = { x: 90, y: H/2, vy: 0, r: 14, rot: 0, prevY: H/2, prevRot: 0 };
   pipes = [];
   frame = 0;
   score = 0;
   runCoins = 0;
+  lastGapCenter = null;
 }
 
 function spawnPipe() {
   const margin = 60;
-  const top = margin + Math.random() * (H - settings.gap - margin*2 - 80);
-  pipes.push({ x: W, top: top, gap: settings.gap, passed: false, coin: true });
+  const groundY = H - 50;
+  const half = settings.gap / 2;
+  const minC = margin + half;                 // hoogste midden (opening niet door plafond)
+  const maxC = groundY - margin - half;       // laagste midden (opening niet in grond)
+  // Maximaal haalbare verticale verschuiving tussen twee opeenvolgende openingen,
+  // afgeleid van hoe hoog de vogel kan klimmen in de tijd tussen twee buizen.
+  const maxShift = Math.min(0.45 * Math.abs(settings.jump) * settings.interval, maxC - minC);
+  let center;
+  if (lastGapCenter == null) {
+    center = minC + Math.random() * (maxC - minC);
+  } else {
+    const lo = Math.max(minC, lastGapCenter - maxShift);
+    const hi = Math.min(maxC, lastGapCenter + maxShift);
+    center = lo + Math.random() * (hi - lo);
+  }
+  lastGapCenter = center;
+  pipes.push({ x: W, prevX: W, top: center - half, gap: settings.gap, passed: false, coin: true });
 }
 
 function flap() {
@@ -412,7 +428,7 @@ function drawBgClassic() {
   // wolken
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
   for (let i = 0; i < 3; i++) {
-    const cx = ((i*160 - frame*0.3) % (W+120)) + (i*40);
+    const cx = ((i*160 - fFrame*0.3) % (W+120)) + (i*40);
     const x = ((cx % (W+120)) + (W+120)) % (W+120) - 60;
     ctx.beginPath();
     ctx.arc(x, 80 + i*30, 24, 0, Math.PI*2);
@@ -431,7 +447,7 @@ function drawBgDark() {
   ctx.fillRect(0, 0, W, H);
   // sterren
   for (const s of stars) {
-    const a = 0.4 + 0.4 * Math.sin(frame*0.05 + s.t);
+    const a = 0.4 + 0.4 * Math.sin(fFrame*0.05 + s.t);
     ctx.fillStyle = 'rgba(255,255,255,' + a.toFixed(2) + ')';
     ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2); ctx.fill();
   }
@@ -449,7 +465,7 @@ function drawBgDark() {
   drawDistantCastle();
   // mist
   for (let i = 0; i < 3; i++) {
-    const cx = ((i*170 - frame*0.25) % (W+140)) + (i*40);
+    const cx = ((i*170 - fFrame*0.25) % (W+140)) + (i*40);
     const x = ((cx % (W+140)) + (W+140)) % (W+140) - 70;
     ctx.fillStyle = 'rgba(120,95,170,0.18)';
     ctx.beginPath();
@@ -489,7 +505,7 @@ function drawBgSunset() {
   ctx.restore();
   // donkere wolkenslierten
   for (let i = 0; i < 3; i++) {
-    const cx = ((i*175 - frame*0.4) % (W+150)) + (i*40);
+    const cx = ((i*175 - fFrame*0.4) % (W+150)) + (i*40);
     const x = ((cx % (W+150)) + (W+150)) % (W+150) - 75;
     ctx.fillStyle = 'rgba(70,40,80,0.32)';
     ctx.beginPath();
@@ -524,7 +540,7 @@ function drawGroundSunset() {
   ctx.fillRect(0, gy, W, 6);
   // scrollende gras-silhouetten
   ctx.fillStyle = '#1a0f28';
-  const off = (frame * (settings ? settings.speed : 2)) % 22;
+  const off = (fFrame * (settings ? settings.speed : 2)) % 22;
   for (let x = -off; x < W; x += 22) {
     ctx.beginPath();
     ctx.moveTo(x, gy+7); ctx.lineTo(x+5, gy-5); ctx.lineTo(x+10, gy+7);
@@ -540,7 +556,7 @@ function drawGroundClassic() {
   ctx.fillRect(0, gy, W, 12);
   // scrollend gras-randje
   ctx.fillStyle = '#4aa838';
-  const off = (frame * (settings ? settings.speed : 2)) % 24;
+  const off = (fFrame * (settings ? settings.speed : 2)) % 24;
   for (let x = -off; x < W; x += 24) ctx.fillRect(x, gy+8, 12, 4);
 }
 
@@ -555,7 +571,7 @@ function drawGroundDark() {
   ctx.fillRect(0, gy, W, 6);
   ctx.strokeStyle = 'rgba(0,0,0,0.45)';
   ctx.lineWidth = 2;
-  const off = (frame * (settings ? settings.speed : 2)) % 28;
+  const off = (fFrame * (settings ? settings.speed : 2)) % 28;
   for (let x = -off; x < W; x += 28) {
     ctx.beginPath(); ctx.moveTo(x, gy+6); ctx.lineTo(x, H); ctx.stroke();
   }
@@ -658,7 +674,7 @@ function drawCoins() {
   for (const p of pipes) {
     if (!p.coin) continue;
     const cx = p.x + 30, cy = p.top + p.gap/2;
-    const sx = Math.abs(Math.cos(frame * 0.1)) * 0.85 + 0.15; // draaiing
+    const sx = Math.abs(Math.cos(fFrame * 0.1)) * 0.85 + 0.15; // draaiing
     ctx.save();
     ctx.translate(cx, cy);
     ctx.scale(sx, 1);
@@ -790,10 +806,13 @@ function drawBirdShape(c, skin, anim) {
 }
 
 function drawBird() {
+  // geïnterpoleerde positie/hoek tussen physics-stappen
+  const y = bird.prevY != null ? bird.prevY + (bird.y - bird.prevY) * renderAlpha : bird.y;
+  const rot = bird.prevRot != null ? bird.prevRot + (bird.rot - bird.prevRot) * renderAlpha : bird.rot;
   ctx.save();
-  ctx.translate(bird.x, bird.y);
-  ctx.rotate(bird.rot);
-  drawBirdShape(ctx, selectedSkin, frame);
+  ctx.translate(bird.x, y);
+  ctx.rotate(rot);
+  drawBirdShape(ctx, selectedSkin, fFrame);
   ctx.restore();
 }
 
@@ -833,6 +852,11 @@ function drawHud() {
 
 // ====================== GAME LOOP ======================
 function update() {
+  // vorige posities bewaren voor vloeiende render-interpolatie
+  if (state === 'ready' || state === 'playing') {
+    bird.prevY = bird.y;
+    bird.prevRot = bird.rot;
+  }
   if (state === 'ready') {
     frame++;
     bird.y = H/2 + Math.sin(frame * 0.1) * 8;
@@ -851,6 +875,7 @@ function update() {
     const groundY = H - 50;
     const w = 60;
     for (const p of pipes) {
+      p.prevX = p.x;
       p.x -= settings.speed;
       if (!p.passed && p.x + w < bird.x) { p.passed = true; score++; }
       // munt oppakken
@@ -878,8 +903,18 @@ function update() {
 
 function render() {
   drawBackground();
-  drawPipes();
-  drawCoins();
+  // Tijdens het spelen schuift de hele buizen-/muntenwereld vloeiend mee
+  // tussen physics-stappen (interpolatie) -> boterzacht op 120Hz-schermen.
+  if (state === 'playing') {
+    ctx.save();
+    ctx.translate(settings.speed * (1 - renderAlpha), 0);
+    drawPipes();
+    drawCoins();
+    ctx.restore();
+  } else {
+    drawPipes();
+    drawCoins();
+  }
   drawGround();
   if (state === 'ready' || state === 'playing' || state === 'dead') drawBird();
   drawReady();
@@ -891,7 +926,7 @@ function render() {
 // schermverversing (60/120Hz) of opgelopen vertraging. Zo blijft het tempo
 // op elke telefoon precies gelijk en niet afhankelijk van de framerate.
 const STEP_MS = 1000 / 60;
-let _last = 0, _acc = 0;
+let _last = 0, _acc = 0, renderAlpha = 0, fFrame = 0;
 function loop(now) {
   if (!_last) _last = now;
   _acc += now - _last;
@@ -899,6 +934,8 @@ function loop(now) {
   if (_acc > 250) _acc = 250; // na tab-wissel niet eindeloos inhalen
   let steps = 0;
   while (_acc >= STEP_MS && steps < 5) { update(); _acc -= STEP_MS; steps++; }
+  renderAlpha = _acc / STEP_MS;      // 0..1 fractie tot de volgende physics-stap
+  fFrame = frame + renderAlpha;      // vloeiende tijd voor animaties
   render();
   requestAnimationFrame(loop);
 }
