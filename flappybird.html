@@ -235,20 +235,23 @@ const shopEl = document.getElementById('shop');
 const gameoverEl = document.getElementById('gameover');
 
 // Moeilijkheidsinstellingen
+// gravity/jump/speed in eenheden per vaste tik (60/sec). coinValue = munten per opgepakte munt.
 const DIFFS = {
-  easy:   { gap: 190, gravity: 0.17, jump: -5.4, speed: 1.8, interval: 120, maxVy: 6.5 },
-  normal: { gap: 160, gravity: 0.22, jump: -6.0, speed: 2.2, interval: 105, maxVy: 7.0 },
-  hard:   { gap: 130, gravity: 0.28, jump: -6.6, speed: 2.8, interval: 90,  maxVy: 7.5 },
+  easy:   { gap: 185, gravity: 0.30, jump: -6.8, speed: 2.7, interval: 85, maxVy: 8.5, coinValue: 1 },
+  normal: { gap: 158, gravity: 0.36, jump: -7.2, speed: 3.2, interval: 72, maxVy: 9.0, coinValue: 2 },
+  hard:   { gap: 132, gravity: 0.42, jump: -7.8, speed: 3.8, interval: 60, maxVy: 9.5, coinValue: 3 },
 };
 let diff = 'normal';
 
 // Skins & thema's (prijs in munten; 0 = gratis)
 const SKINS = {
   classic: { name: 'Klassieke Vogel', price: 0,   desc: 'De gele klassieker' },
+  phoenix: { name: 'Vuurvogel',       price: 100, desc: 'Feniks met vlammenstaart' },
   knight:  { name: 'Black Knight',    price: 750, desc: 'Donkere ridder met cape' },
 };
 const THEMES = {
   classic: { name: 'Klassiek',        price: 0,    desc: 'Heldere lucht & groene buizen' },
+  sunset:  { name: 'Zonsondergang',   price: 100,  desc: 'Warme avondlucht & silhouetten' },
   dark:    { name: 'Donker Kasteel',  price: 1000, desc: 'Nacht, maan & kasteelmuren' },
 };
 
@@ -370,7 +373,9 @@ for (let i = 0; i < 45; i++) {
 
 // --- Achtergrond ---
 function drawBackground() {
-  if (selectedTheme === 'dark') drawBgDark(); else drawBgClassic();
+  if (selectedTheme === 'dark') drawBgDark();
+  else if (selectedTheme === 'sunset') drawBgSunset();
+  else drawBgClassic();
 }
 
 function drawBgClassic() {
@@ -445,9 +450,64 @@ function drawDistantCastle() {
   }
 }
 
+function drawBgSunset() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#2a1a4a');
+  g.addColorStop(0.42, '#ff6a5c');
+  g.addColorStop(0.7, '#ffa45c');
+  g.addColorStop(1, '#ffd27d');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  // grote ondergaande zon
+  const sy = H - 120;
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,225,150,0.95)'; ctx.shadowBlur = 45;
+  ctx.fillStyle = '#fff1bd';
+  ctx.beginPath(); ctx.arc(W/2, sy, 50, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+  // donkere wolkenslierten
+  for (let i = 0; i < 3; i++) {
+    const cx = ((i*175 - frame*0.4) % (W+150)) + (i*40);
+    const x = ((cx % (W+150)) + (W+150)) % (W+150) - 75;
+    ctx.fillStyle = 'rgba(70,40,80,0.32)';
+    ctx.beginPath();
+    ctx.arc(x, 72 + i*26, 22, 0, Math.PI*2);
+    ctx.arc(x+26, 72 + i*26, 28, 0, Math.PI*2);
+    ctx.arc(x+54, 72 + i*26, 20, 0, Math.PI*2);
+    ctx.fill();
+  }
+  // verre heuvel-silhouetten
+  const y0 = H - 50;
+  ctx.fillStyle = '#3a2350';
+  ctx.beginPath();
+  ctx.moveTo(0, y0);
+  ctx.quadraticCurveTo(W*0.2, y0-42, W*0.4, y0-16);
+  ctx.quadraticCurveTo(W*0.62, y0-48, W*0.82, y0-18);
+  ctx.quadraticCurveTo(W*0.95, y0-36, W, y0-22);
+  ctx.lineTo(W, y0); ctx.closePath(); ctx.fill();
+}
+
 // --- Grond ---
 function drawGround() {
-  if (selectedTheme === 'dark') drawGroundDark(); else drawGroundClassic();
+  if (selectedTheme === 'dark') drawGroundDark();
+  else if (selectedTheme === 'sunset') drawGroundSunset();
+  else drawGroundClassic();
+}
+
+function drawGroundSunset() {
+  const gy = H - 50;
+  ctx.fillStyle = '#241636';
+  ctx.fillRect(0, gy, W, 50);
+  ctx.fillStyle = '#3a2350';
+  ctx.fillRect(0, gy, W, 6);
+  // scrollende gras-silhouetten
+  ctx.fillStyle = '#1a0f28';
+  const off = (frame * (settings ? settings.speed : 2)) % 22;
+  for (let x = -off; x < W; x += 22) {
+    ctx.beginPath();
+    ctx.moveTo(x, gy+7); ctx.lineTo(x+5, gy-5); ctx.lineTo(x+10, gy+7);
+    ctx.fill();
+  }
 }
 
 function drawGroundClassic() {
@@ -482,7 +542,28 @@ function drawGroundDark() {
 
 // --- Buizen / muren ---
 function drawPipes() {
-  if (selectedTheme === 'dark') drawPipesDark(); else drawPipesClassic();
+  if (selectedTheme === 'dark') drawPipesDark();
+  else if (selectedTheme === 'sunset') drawPipesSunset();
+  else drawPipesClassic();
+}
+
+// donkere silhouet-buizen met warme randlichtjes (tegen de avondlucht)
+function drawPipesSunset() {
+  const w = 60;
+  for (const p of pipes) {
+    const by = p.top + p.gap;
+    ctx.fillStyle = '#241338';
+    ctx.fillRect(p.x, 0, w, p.top);
+    ctx.fillRect(p.x-4, p.top-22, w+8, 22);
+    ctx.fillRect(p.x, by, w, H - by);
+    ctx.fillRect(p.x-4, by, w+8, 22);
+    // warme rimlight langs de randen
+    ctx.fillStyle = 'rgba(255,160,90,0.75)';
+    ctx.fillRect(p.x, 0, 4, p.top-22);
+    ctx.fillRect(p.x-4, p.top-25, w+8, 3);
+    ctx.fillRect(p.x, by+22, 4, H-by-22);
+    ctx.fillRect(p.x-4, by+22, w+8, 3);
+  }
 }
 
 function drawPipesClassic() {
@@ -619,6 +700,52 @@ function drawBirdShape(c, skin, anim) {
     c.beginPath(); c.arc(6, -4.2, 1.4, 0, Math.PI*2); c.fill();
     c.beginPath(); c.arc(11, -4.2, 1.4, 0, Math.PI*2); c.fill();
     c.shadowBlur = 0;
+  } else if (skin === 'phoenix') {
+    const f1 = Math.sin(anim * 0.4), f2 = Math.sin(anim * 0.7 + 1);
+    // vlammenstaart (buitenste oranje)
+    c.fillStyle = '#ff7a18';
+    c.beginPath();
+    c.moveTo(-6, -6);
+    c.quadraticCurveTo(-22 - f1*4, -10, -29 - f2*5, 0);
+    c.quadraticCurveTo(-22, 3, -27 - f1*4, 11);
+    c.quadraticCurveTo(-16, 8, -6, 10);
+    c.closePath(); c.fill();
+    // binnenste gele vlam
+    c.fillStyle = '#ffd23f';
+    c.beginPath();
+    c.moveTo(-6, -2);
+    c.quadraticCurveTo(-16 - f2*3, -3, -21 - f1*3, 2);
+    c.quadraticCurveTo(-13, 4, -6, 6);
+    c.closePath(); c.fill();
+    // vleugel (oranje, klapt)
+    c.save(); c.translate(-2, 0); c.rotate(flap * 0.5);
+    c.fillStyle = '#ff5722'; c.strokeStyle = '#c1370b'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-15, -9, -21, 2); c.quadraticCurveTo(-13, 4, 0, 6); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#ffd23f';
+    c.beginPath(); c.moveTo(-21, 2); c.quadraticCurveTo(-13, 4, 0, 6); c.quadraticCurveTo(-10, 2, -21, 2); c.fill();
+    c.restore();
+    // lichaam (gloeiend rood-oranje verloop)
+    c.save();
+    c.shadowColor = 'rgba(255,120,30,0.85)'; c.shadowBlur = 12;
+    const g = c.createRadialGradient(-3, -3, 2, 0, 0, r + 2);
+    g.addColorStop(0, '#ffb13c'); g.addColorStop(1, '#e23a14');
+    c.fillStyle = g;
+    c.beginPath(); c.arc(0, 0, r, 0, Math.PI*2); c.fill();
+    c.restore();
+    c.strokeStyle = '#a82b08'; c.lineWidth = 1.5; c.stroke();
+    // vlammenkam op de kop
+    c.fillStyle = '#ffd23f';
+    for (let i = 0; i < 3; i++) {
+      const bx = -2 + i*5, fh = 8 + Math.sin(anim*0.5 + i) * 2;
+      c.beginPath();
+      c.moveTo(bx - 3, -10); c.quadraticCurveTo(bx, -10 - fh, bx + 3, -10); c.fill();
+    }
+    // oog
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(7, -4, 4.5, 0, Math.PI*2); c.fill();
+    c.fillStyle = '#000'; c.beginPath(); c.arc(9, -4, 2.3, 0, Math.PI*2); c.fill();
+    // snavel
+    c.fillStyle = '#ffb300';
+    c.beginPath(); c.moveTo(12, -1); c.lineTo(22, 2); c.lineTo(12, 5); c.fill();
   } else {
     // klassieke gele vogel
     const wy = 2 + flap * 3;
@@ -709,7 +836,8 @@ function update() {
         const cx = p.x + 30, cy = p.top + p.gap/2;
         const dx = bird.x - cx, dy = bird.y - cy;
         if (dx*dx + dy*dy < (bird.r + 11) * (bird.r + 11)) {
-          p.coin = false; coins++; runCoins++;
+          p.coin = false;
+          coins += settings.coinValue; runCoins += settings.coinValue;
           persist();
           updateCoinUI();
         }
@@ -737,7 +865,21 @@ function render() {
   drawScore();
 }
 
-function loop() { update(); render(); requestAnimationFrame(loop); }
+// Vaste tijdstap: physics draait altijd op 60 tikken/sec, ongeacht de
+// schermverversing (60/120Hz) of opgelopen vertraging. Zo blijft het tempo
+// op elke telefoon precies gelijk en niet afhankelijk van de framerate.
+const STEP_MS = 1000 / 60;
+let _last = 0, _acc = 0;
+function loop(now) {
+  if (!_last) _last = now;
+  _acc += now - _last;
+  _last = now;
+  if (_acc > 250) _acc = 250; // na tab-wissel niet eindeloos inhalen
+  let steps = 0;
+  while (_acc >= STEP_MS && steps < 5) { update(); _acc -= STEP_MS; steps++; }
+  render();
+  requestAnimationFrame(loop);
+}
 
 // ====================== WINKEL ======================
 let shopTab = 'skins';
@@ -776,6 +918,13 @@ function drawThemePreview(c, theme) {
     c.fillStyle = '#e9e3ff'; c.beginPath(); c.arc(45, 11, 5, 0, Math.PI*2); c.fill();
     c.fillStyle = '#5b5566'; c.fillRect(16, 0, 12, 19); c.fillRect(16, 39, 12, h-39);
     c.fillStyle = '#13101c'; c.fillRect(0, h-8, w, 8);
+  } else if (theme === 'sunset') {
+    const g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#2a1a4a'); g.addColorStop(0.5, '#ff6a5c'); g.addColorStop(1, '#ffd27d');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#fff1bd'; c.beginPath(); c.arc(w/2, h-16, 9, 0, Math.PI*2); c.fill();
+    c.fillStyle = '#241338'; c.fillRect(15, 0, 12, 18); c.fillRect(15, 40, 12, h-40);
+    c.fillStyle = '#241636'; c.fillRect(0, h-8, w, 8);
   } else {
     c.fillStyle = '#70c5ce'; c.fillRect(0, 0, w, h);
     c.fillStyle = '#fff';
@@ -962,7 +1111,7 @@ document.getElementById('new-name').addEventListener('keydown', (e) => {
 
 // ====================== INIT ======================
 reset();
-loop();
+requestAnimationFrame(loop);
 if (activeProfile && profiles[activeProfile]) {
   loadActive();
   document.getElementById('menu-name').textContent = activeProfile;
