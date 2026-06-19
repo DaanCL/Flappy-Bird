@@ -11,6 +11,7 @@
 <title>Flappy Bird</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root { --sat: env(safe-area-inset-top, 0px); }
   html, body {
     height: 100%;
     height: -webkit-fill-available;
@@ -26,16 +27,21 @@
   body { position: fixed; inset: 0; }
   #game-wrap {
     position: relative;
-    width: min(100vw, 66.6667vh);
-    aspect-ratio: 2 / 3;
-    max-width: 400px;
+    width: min(400px, 100vw);
+    height: min(600px, 100vh);
     box-shadow: 0 10px 40px rgba(0,0,0,0.5);
     border-radius: 12px;
     overflow: hidden;
   }
-  /* Op telefoons: volledig scherm, geen rand */
-  @media (max-width: 500px) {
-    #game-wrap { border-radius: 0; box-shadow: none; }
+  /* Op telefoons: volledig scherm vullen, geen randen boven/onder */
+  @media (max-width: 600px) {
+    #game-wrap {
+      width: 100vw;
+      height: 100vh;   /* fallback */
+      height: 100dvh;  /* dynamische viewport (verbergt iOS-balk netjes) */
+      border-radius: 0;
+      box-shadow: none;
+    }
   }
   canvas#canvas { display: block; width: 100%; height: 100%; background: #70c5ce; touch-action: none; }
 
@@ -222,13 +228,29 @@
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-// Logische speelgrootte blijft 400x600; backing store schaalt mee met het
-// scherm (retina) zodat alles scherp blijft op iPhone.
-const W = 400, H = 600;
+const wrap = document.getElementById('game-wrap');
 const DPR = Math.min(window.devicePixelRatio || 1, 3);
-canvas.width = W * DPR;
-canvas.height = H * DPR;
-ctx.scale(DPR, DPR);
+
+// De logische breedte is altijd 400 (zo voelt alles even groot op elk toestel);
+// de hoogte neemt de échte schermverhouding aan, zodat het beeld het hele
+// scherm vult zonder randen en zonder vervorming. uiTop houdt de score/munten
+// onder de notch vandaan.
+let W = 400, H = 600, uiTop = 0;
+function resize() {
+  const rect = wrap.getBoundingClientRect();
+  const cssW = rect.width || 400, cssH = rect.height || 600;
+  W = 400;
+  H = Math.round(400 * cssH / cssW);
+  canvas.width = Math.round(cssW * DPR);
+  canvas.height = Math.round(cssH * DPR);
+  const s = canvas.width / W; // gelijk voor x en y -> geen vervorming
+  ctx.setTransform(s, 0, 0, s, 0, 0);
+  const satCss = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
+  uiTop = satCss * W / cssW;
+}
+resize();
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', resize);
 
 const menuEl = document.getElementById('menu');
 const shopEl = document.getElementById('shop');
@@ -789,7 +811,7 @@ function drawScore() {
   if (state === 'playing') {
     ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 4;
     ctx.font = 'bold 48px Segoe UI, sans-serif'; ctx.textAlign = 'center';
-    ctx.strokeText(score, W/2, 80); ctx.fillText(score, W/2, 80);
+    ctx.strokeText(score, W/2, 80 + uiTop); ctx.fillText(score, W/2, 80 + uiTop);
   }
 }
 
@@ -797,7 +819,7 @@ function drawHud() {
   if (state !== 'playing' && state !== 'ready') return;
   // muntteller deze ronde, linksboven
   ctx.save();
-  ctx.translate(22, 30);
+  ctx.translate(22, 30 + uiTop);
   ctx.fillStyle = '#ffcf33'; ctx.strokeStyle = '#c98f10'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill(); ctx.stroke();
   ctx.fillStyle = '#c98f10'; ctx.font = 'bold 11px Segoe UI'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -805,7 +827,7 @@ function drawHud() {
   ctx.restore();
   ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000'; ctx.lineWidth = 3;
   ctx.font = 'bold 20px Segoe UI'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.strokeText(runCoins, 38, 30); ctx.fillText(runCoins, 38, 30);
+  ctx.strokeText(runCoins, 38, 30 + uiTop); ctx.fillText(runCoins, 38, 30 + uiTop);
   ctx.textBaseline = 'alphabetic';
 }
 
