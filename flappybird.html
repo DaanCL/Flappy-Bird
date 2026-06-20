@@ -107,6 +107,8 @@
   }
   .diff-btn.active, .mode-btn.active { background: #fff; color: #2c3e50; }
   .mode-btn.active[data-mode="chaos"] { background: #ff5a8a; color: #fff; border-color: #ff5a8a; }
+  .diff-btn { display: flex; flex-direction: column; align-items: center; line-height: 1.1; padding: 6px 14px; }
+  .diff-btn small { font-size: 11px; font-weight: 700; opacity: .85; margin-top: 2px; }
 
   .score-box { font-size: 22px; font-weight: 700; }
   .best { font-size: 16px; opacity: .85; }
@@ -229,6 +231,11 @@
     border-radius: 12px; padding: 9px 12px;
   }
   .ach-item.done { border-color: #ffd54a; background: rgba(255,213,74,0.14); }
+  .ach-item.claimable { border-color: #5ec64a; background: rgba(94,198,74,0.16); }
+  .btn.small, #daily-btn { position: relative; }
+  .badge { position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; border-radius: 999px;
+    background: #e74c3c; color: #fff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+  .badge.hidden { display: none; }
   .ach-icon { font-size: 22px; flex: 0 0 auto; width: 28px; text-align: center; filter: grayscale(1) opacity(0.5); }
   .ach-item.done .ach-icon { filter: none; }
   .ach-info { flex: 1; min-width: 0; }
@@ -237,6 +244,10 @@
   .ach-reward { font-size: 13px; font-weight: 700; color: #ffd54a; flex: 0 0 auto; }
   .mbar { height: 6px; background: rgba(255,255,255,0.15); border-radius: 999px; margin: 5px 0 3px; overflow: hidden; }
   .mbar-fill { height: 100%; background: #5ec64a; border-radius: 999px; transition: width .3s; }
+  .mission-claim { flex: 0 0 auto; border: none; border-radius: 999px; padding: 8px 12px; cursor: pointer;
+    background: #5ec64a; color: #fff; font-size: 13px; font-weight: 800; box-shadow: 0 3px 0 #3e8e30;
+    animation: pulse 0.8s ease-in-out infinite alternate; }
+  .mission-claim:active { box-shadow: 0 1px 0 #3e8e30; }
 
   /* Onboarding */
   .tut-list { display: flex; flex-direction: column; gap: 12px; width: 320px; max-width: 90%; }
@@ -250,6 +261,12 @@
   .stat-row { display: flex; justify-content: space-between; background: rgba(255,255,255,0.08);
     border-radius: 10px; padding: 9px 14px; font-size: 15px; }
   .stat-row b { color: #ffd54a; }
+  .lb-row { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 9px 14px; font-size: 15px; }
+  .lb-row.me { border: 2px solid #ffd54a; background: rgba(255,213,74,0.14); }
+  .lb-rank { font-weight: 800; width: 26px; flex: 0 0 auto; opacity: .8; }
+  .lb-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-score { font-weight: 800; color: #ffd54a; flex: 0 0 auto; }
 
   /* Pauzeknop */
   .pause-btn {
@@ -290,9 +307,9 @@
     <h1>Flappy Bird</h1>
     <div class="playerbar">👤 <span id="menu-name">—</span> · 🪙 <span id="menu-coins">0</span></div>
     <div class="difficulty" id="difficulty">
-      <button class="diff-btn" data-diff="easy">Makkelijk</button>
-      <button class="diff-btn active" data-diff="normal">Normaal</button>
-      <button class="diff-btn" data-diff="hard">Moeilijk</button>
+      <button class="diff-btn" data-diff="easy">Makkelijk<small>🪙 ×1</small></button>
+      <button class="diff-btn active" data-diff="normal">Normaal<small>🪙 ×2</small></button>
+      <button class="diff-btn" data-diff="hard">Moeilijk<small>🪙 ×3</small></button>
     </div>
     <div class="difficulty" id="modesel">
       <button class="mode-btn active" data-mode="classic">Klassiek</button>
@@ -300,16 +317,26 @@
       <button class="mode-btn" data-mode="time">⏱ Time</button>
     </div>
     <button class="btn" id="play-btn">▶ Spelen</button>
+    <button class="btn secondary" id="daily-btn">📅 Daguitdaging<span id="daily-badge" class="badge hidden">!</span></button>
     <button class="btn secondary" id="shop-btn">🛒 Winkel</button>
     <div class="menu-row">
-      <button class="btn secondary small" id="ach-btn">🏆</button>
+      <button class="btn secondary small" id="ach-btn">🏆<span id="ach-badge" class="badge hidden">0</span></button>
       <button class="btn secondary small" id="missions-btn">🎯 Missies</button>
       <button class="btn secondary small" id="settings-btn">⚙️</button>
     </div>
     <p class="best">Beste score: <span id="menu-best">0</span></p>
     <button class="textlink" id="stats-btn">📊 Statistieken</button>
+    <button class="textlink" id="leaderboard-btn">🏅 Toppers</button>
     <button class="textlink" id="help-btn">Hoe te spelen</button>
     <button class="textlink" id="switch-btn">Wissel speler</button>
+  </div>
+
+  <!-- Toppers / leaderboard -->
+  <div id="leaderboard" class="screen hidden">
+    <h2>🏅 Toppers</h2>
+    <p class="hint">Beste scores van alle spelers op dit apparaat</p>
+    <div id="lb-body" class="stats-body"></div>
+    <button class="btn secondary" id="lb-back">← Terug</button>
   </div>
 
   <!-- Statistieken -->
@@ -332,10 +359,18 @@
     <button class="btn" id="tut-begin">Begrepen!</button>
   </div>
 
+  <!-- Daguitdaging -->
+  <div id="daily" class="screen hidden">
+    <h2>📅 Daguitdaging</h2>
+    <div id="daily-body" class="stats-body"></div>
+    <button class="btn" id="daily-start">▶ Start uitdaging</button>
+    <button class="btn secondary" id="daily-back">← Terug</button>
+  </div>
+
   <!-- Missies -->
   <div id="missions" class="screen hidden">
     <h2>🎯 Missies</h2>
-    <p class="hint">Voltooi missies voor bonusmunten</p>
+    <p class="hint" id="mission-countdown"></p>
     <div id="mission-list" class="ach-list"></div>
     <button class="btn secondary" id="missions-back">← Terug</button>
   </div>
@@ -352,7 +387,10 @@
     <h2>Instellingen</h2>
     <div class="setting-row"><span>🔊 Geluid</span><button class="toggle" id="toggle-sound" aria-label="Geluid"></button></div>
     <div class="setting-row"><span>🎵 Muziek</span><button class="toggle" id="toggle-music" aria-label="Muziek"></button></div>
+    <div class="setting-row"><span>✨ Vogelspoor</span><button class="toggle" id="toggle-trail" aria-label="Vogelspoor"></button></div>
     <div class="setting-row"><span>📳 Trillen</span><button class="toggle" id="toggle-haptics" aria-label="Trillen"></button></div>
+    <div class="setting-row"><span>♿ Minder beweging</span><button class="toggle" id="toggle-reduce" aria-label="Minder beweging"></button></div>
+    <div class="setting-row"><span>🎯 Hulp: ruimere marge</span><button class="toggle" id="toggle-assist" aria-label="Hulpmodus"></button></div>
     <button class="btn secondary" id="settings-back">← Terug</button>
   </div>
 
@@ -374,7 +412,9 @@
     <canvas id="medal-canvas" width="80" height="80" class="hidden"></canvas>
     <div id="newbest" class="newbest hidden">★ NIEUW RECORD ★</div>
     <div class="score-box">Score: <span id="final-score">0</span></div>
+    <div class="best" id="go-mode"></div>
     <div class="best">Beste: <span id="best-score">0</span></div>
+    <div class="best" id="go-next"></div>
     <div class="best">🪙 verzameld: <span id="run-coins">0</span></div>
     <button class="btn continue hidden" id="continue-btn">▶ Doorgaan (50 🪙)</button>
     <button class="btn" id="retry-btn">↻ Opnieuw</button>
@@ -433,6 +473,7 @@ const SKINS = {
   phoenix: { name: 'Vuurvogel',       price: 350,  desc: 'Feniks met vlammenstaart' },
   robot:   { name: 'Robovogel',       price: 750,  desc: 'Metaal met gloeiend LED-oog' },
   ghost:   { name: 'Spookje',         price: 1000, desc: 'Doorschijnend & spookachtig' },
+  penguin: { name: 'Pinguïn',         price: 1100, desc: 'Zwart-wit met oranje snavel' },
   angel:   { name: 'Engel',           price: 1300, desc: 'Halo & witte veren­vleugels' },
   alien:   { name: 'Alien',           price: 1400, desc: 'Groen mannetje met antennes' },
   ninja:   { name: 'Ninja',           price: 1800, desc: 'Masker & wapperende hoofdband' },
@@ -445,6 +486,7 @@ const THEMES = {
   jungle:  { name: 'Jungle',          price: 800,  desc: 'Bamboe, bladeren & lichtstralen' },
   egypt:   { name: 'Egypte',          price: 1000, desc: 'Piramides, zon & zandsteen' },
   space:   { name: 'Ruimte',          price: 1200, desc: 'Sterren, planeten & metaal' },
+  winter:  { name: 'Winter',          price: 1400, desc: 'Sneeuwval, ijs & witte heuvels' },
   ocean:   { name: 'Onderwater',      price: 1600, desc: 'Zeebodem, koraal & bubbels' },
   neon:    { name: 'Neon Stad',       price: 2200, desc: 'Cyberpunk met gloeiende buizen' },
   volcano: { name: 'Vulkaan',         price: 3000, desc: 'Lava, as & gloeiende rotsen' },
@@ -481,14 +523,18 @@ let ownedSkins = ['classic'], ownedThemes = ['classic'];
 let selectedSkin = 'classic', selectedTheme = 'classic';
 let stats = { games: 0, totalCoins: 0, powerups: 0 };
 let achievements = [];
+let achievementsClaimed = [];
 let missions = [];
+let missionsTime = 0;
 let bests = { classic: 0, chaos: 0, time: 0 };
+let bestsDiff = { easy: 0, normal: 0, hard: 0 };
 const MODE_LABELS = { classic: 'Klassiek', chaos: 'Chaos', time: 'Time Attack' };
+const DIFF_LABELS = { easy: 'Makkelijk', normal: 'Normaal', hard: 'Moeilijk' };
 
 function defaultProfileData() {
   return { coins: 0, best: 0, ownedSkins: ['classic'], ownedThemes: ['classic'], selSkin: 'classic', selTheme: 'classic',
-           stats: { games: 0, totalCoins: 0, powerups: 0, dailyDate: '', streak: 0, seenTutorial: false }, achievements: [], missions: [],
-           bests: { classic: 0, chaos: 0, time: 0 } };
+           stats: { games: 0, totalCoins: 0, powerups: 0, dailyDate: '', streak: 0, seenTutorial: false, dcDate: '' }, achievements: [], achievementsClaimed: [], missions: [], missionsTime: 0,
+           bests: { classic: 0, chaos: 0, time: 0 }, bestsDiff: { easy: 0, normal: 0, hard: 0 } };
 }
 
 // schrijf de huidige gegevens terug naar het actieve profiel
@@ -498,7 +544,7 @@ function persist() {
     coins: coins, best: best,
     ownedSkins: ownedSkins, ownedThemes: ownedThemes,
     selSkin: selectedSkin, selTheme: selectedTheme,
-    stats: stats, achievements: achievements, missions: missions, bests: bests,
+    stats: stats, achievements: achievements, achievementsClaimed: achievementsClaimed, missions: missions, missionsTime: missionsTime, bests: bests, bestsDiff: bestsDiff,
   };
   localStorage.setItem('flappyProfiles', JSON.stringify(profiles));
   localStorage.setItem('flappyActiveProfile', activeProfile);
@@ -517,11 +563,15 @@ function loadActive() {
   selectedTheme = ownedThemes.includes(d.selTheme) ? d.selTheme : 'classic';
   const st = d.stats || {};
   stats = { games: st.games || 0, totalCoins: st.totalCoins || 0, powerups: st.powerups || 0,
-            dailyDate: st.dailyDate || '', streak: st.streak || 0, seenTutorial: !!st.seenTutorial };
+            dailyDate: st.dailyDate || '', streak: st.streak || 0, seenTutorial: !!st.seenTutorial, dcDate: st.dcDate || '' };
   achievements = Array.isArray(d.achievements) ? d.achievements.slice() : [];
+  achievementsClaimed = Array.isArray(d.achievementsClaimed) ? d.achievementsClaimed.slice() : [];
   missions = Array.isArray(d.missions) ? d.missions.map(m => Object.assign({}, m)) : [];
+  missionsTime = d.missionsTime || 0;
   const b = d.bests || {};
   bests = { classic: b.classic || 0, chaos: b.chaos || 0, time: b.time || 0 };
+  const bd = d.bestsDiff || {};
+  bestsDiff = { easy: bd.easy || 0, normal: bd.normal || 0, hard: bd.hard || 0 };
   ensureMissions();
 }
 
@@ -531,6 +581,10 @@ let audioCtx = null;
 let soundOn = localStorage.getItem('flappySound') !== '0';
 let hapticsOn = localStorage.getItem('flappyHaptics') !== '0';
 let musicOn = localStorage.getItem('flappyMusic') !== '0';
+let trailOn = localStorage.getItem('flappyTrail') !== '0';
+let reducedMotion = localStorage.getItem('flappyReduce') === '1';
+let assistOn = localStorage.getItem('flappyAssist') === '1';
+const SKIN_TRAIL = { classic:'#ffd54a', phoenix:'#ff7a18', robot:'#36e0ff', ghost:'#cfe0ff', penguin:'#9fd0ff', angel:'#fff2c4', alien:'#7ed957', ninja:'#e05a5a', dragon:'#5fd35a', knight:'#b06bff' };
 function ensureAudio() {
   if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
   if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
@@ -546,20 +600,45 @@ function ensureAudio() {
   if (musicOn) startMusic();
 }
 
-// Zachte, sfeervolle achtergrondmuziek (procedureel, pentatonisch -> klinkt nooit vals)
-let musicTimer = null, musicStep = 0;
-const MUSIC_NOTES = [0, 3, 5, 7, 10, 12, 10, 7, 5, 3];
-function noteFreq(semi) { return 220 * Math.pow(2, semi / 12); }
+// Procedurele achtergrondmuziek met een eigen deuntje per context/thema.
+// null = rust. step = ms per noot. base = grondtoon (Hz). Pentatonisch/modaal -> klinkt nooit vals.
+const TUNES = {
+  // Vrolijk, langer & met rusten zodat het niet snel verveelt
+  menu:    { base: 330, step: 195, wave: 'triangle', notes: [0,4,7,12,7,4, 0,2,4,7, null,9,7,4, 2,0, 7,12, 9,7,4,2, 0,null,null,null] },
+  bright:  { base: 294, step: 225, wave: 'triangle', notes: [0,4,7,9,7,4,2,0, null,5,9,12,9,5, 4,2, null,null] },
+  egypt:   { base: 220, step: 200, wave: 'sawtooth', notes: [0,1,4,5,4,1,0,null, 7,5,4,1, 0,-1,0,null, 1,4,1,0, null,null] }, // Phrygisch-dominant ("farao")
+  neon:    { base: 262, step: 150, wave: 'sawtooth', notes: [0,3,7,10,7,3, 0,3,5,3, 0,null,10,7, 3,0, null] },             // synthwave-mineur
+  space:   { base: 196, step: 360, wave: 'sine',     notes: [0,7,12,null, 5,null,9,null, 7,null,12,null, 5,null,null,null] }, // ijl/ambient
+  dark:    { base: 175, step: 250, wave: 'triangle', notes: [0,3,5,6,5,3, 0,null, -2,0,3,null, 5,3,0,null] },               // dreigend mineur
+};
+function tuneForTheme(t) {
+  return ({ classic:'bright', sunset:'bright', jungle:'bright', egypt:'egypt',
+            neon:'neon', space:'space', ocean:'space', volcano:'dark', dark:'dark' })[t] || 'bright';
+}
+function activeTuneKey() {
+  return (state === 'playing' || state === 'ready') ? tuneForTheme(selectedTheme) : 'menu';
+}
+let musicTimer = null, musicStep = 0, musicAcc = 0, musicLast = 0, musicCurKey = null;
+function playTuneNote(tune) {
+  const semi = tune.notes[musicStep % tune.notes.length];
+  musicStep++;
+  if (semi === null || semi === undefined) return; // rust
+  tone(tune.base * Math.pow(2, semi / 12), tune.step / 1000 * 1.6, tune.wave, 0.05, null, 0);
+  if (musicStep % 4 === 0) tone(tune.base / 2, tune.step / 1000 * 2, 'sine', 0.045, null, 0); // baslijn
+}
 function musicTick() {
   if (!musicOn || !audioCtx) return;
-  const n = MUSIC_NOTES[musicStep % MUSIC_NOTES.length];
-  tone(noteFreq(n), 0.55, 'triangle', 0.045, null, 0);          // melodie
-  if (musicStep % 4 === 0) tone(noteFreq(n - 12), 1.1, 'sine', 0.04, null, 0); // baspad
-  musicStep++;
+  const now = performance.now();
+  const dt = musicLast ? (now - musicLast) : 0; musicLast = now;
+  const key = activeTuneKey();
+  if (key !== musicCurKey) { musicCurKey = key; musicStep = 0; musicAcc = 0; } // wissel deuntje vloeiend
+  const tune = TUNES[key] || TUNES.menu;
+  musicAcc += dt;
+  if (musicAcc >= tune.step) { musicAcc = 0; playTuneNote(tune); }
 }
 function startMusic() {
   if (musicTimer || !musicOn || !audioCtx) return;
-  musicTimer = setInterval(musicTick, 440);
+  musicLast = 0; musicTimer = setInterval(musicTick, 45);
 }
 function stopMusic() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
 function tone(freq, dur, type, vol, slideTo, delay) {
@@ -607,13 +686,13 @@ let state = 'menu'; // menu | shop | settings | ready | playing | dead
 let bird, pipes, frame, score, settings, runCoins = 0, lastGapCenter = null;
 let particles = [], popups = [], shake = 0;
 let floatCoins = [], rushTimer = 0, rushCooldown = 0, banner = null;
+let trail = [];
 // power-up toestand
-let shieldActive = false, magnetTimer = 0, doubleTimer = 0, invulnTimer = 0, slowTimer = 0;
+let shieldActive = false, magnetTimer = 0, doubleTimer = 0, invulnTimer = 0, starTimer = 0;
 const POWER_DUR = 360; // 6 sec @ 60 tikken
-const SLOW_DUR = 270;  // 4,5 sec
-const SLOW_FACTOR = 0.55;
-const POWER_COLORS = { shield: '#3aa0ff', magnet: '#ff4d6d', double: '#b06bff', slow: '#5ad1d1' };
-function randomPower() { const a = ['shield', 'magnet', 'double', 'slow']; return a[(Math.random()*a.length)|0]; }
+const STAR_DUR = 210;  // ~3,5 sec onkwetsbaar
+const POWER_COLORS = { shield: '#3aa0ff', magnet: '#ff4d6d', double: '#b06bff', star: '#ffce2e' };
+function randomPower() { const a = ['shield', 'magnet', 'double', 'star']; return a[(Math.random()*a.length)|0]; }
 function activatePower(type, x, y) {
   sfx('power'); haptic([10, 20, 10]);
   stats.powerups++; missionProgress('power', 1); checkAchievements();
@@ -621,72 +700,119 @@ function activatePower(type, x, y) {
   if (type === 'shield') { shieldActive = true; spawnPopup(x, y-14, 'SCHILD', POWER_COLORS.shield); }
   else if (type === 'magnet') { magnetTimer = POWER_DUR; spawnPopup(x, y-14, 'MAGNEET', POWER_COLORS.magnet); }
   else if (type === 'double') { doubleTimer = POWER_DUR; spawnPopup(x, y-14, '2× MUNTEN', POWER_COLORS.double); }
-  else if (type === 'slow') { slowTimer = SLOW_DUR; spawnPopup(x, y-14, 'SLOW-MO', POWER_COLORS.slow); }
+  else if (type === 'star') { starTimer = STAR_DUR; spawnPopup(x, y-14, 'ONKWETSBAAR!', POWER_COLORS.star); }
 }
 
 // ====================== PRESTATIES ======================
+// Ontgrendelen gebeurt automatisch; de beloning claim je zelf op het prestatiescherm.
 const ACHIEVEMENTS = [
-  { id: 'first',   name: 'Eerste vlucht', desc: 'Speel je eerste ronde',          reward: 20,  check: () => stats.games >= 1 },
-  { id: 'score10', name: 'Tien!',         desc: 'Haal 10 punten',                 reward: 30,  check: () => best >= 10 },
-  { id: 'score25', name: 'Kwart eeuw',    desc: 'Haal 25 punten',                 reward: 60,  check: () => best >= 25 },
-  { id: 'score50', name: 'Halve eeuw',    desc: 'Haal 50 punten',                 reward: 150, check: () => best >= 50 },
-  { id: 'coins100',name: 'Spaarpot',      desc: 'Verzamel 100 munten totaal',     reward: 40,  check: () => stats.totalCoins >= 100 },
-  { id: 'coins500',name: 'Goudkoorts',    desc: 'Verzamel 500 munten totaal',     reward: 100, check: () => stats.totalCoins >= 500 },
-  { id: 'games25', name: 'Doorzetter',    desc: 'Speel 25 rondes',                reward: 50,  check: () => stats.games >= 25 },
-  { id: 'power10', name: 'Krachtpatser',  desc: 'Gebruik 10 power-ups',           reward: 60,  check: () => stats.powerups >= 10 },
-  { id: 'collect', name: 'Verzamelaar',   desc: 'Bezit 5 skins/thema\'s samen',   reward: 80,  check: () => (ownedSkins.length + ownedThemes.length) >= 7 },
+  { id: 'first',    name: 'Eerste vlucht', desc: 'Speel je eerste ronde',            reward: 20,   check: () => stats.games >= 1 },
+  { id: 'score10',  name: 'Tien!',         desc: 'Haal 10 punten',                   reward: 30,   check: () => best >= 10 },
+  { id: 'score25',  name: 'Kwart eeuw',    desc: 'Haal 25 punten',                   reward: 60,   check: () => best >= 25 },
+  { id: 'score50',  name: 'Halve eeuw',    desc: 'Haal 50 punten',                   reward: 150,  check: () => best >= 50 },
+  { id: 'score75',  name: 'Vliegaas',      desc: 'Haal 75 punten',                   reward: 300,  check: () => best >= 75 },
+  { id: 'score100', name: 'Eeuweling',     desc: 'Haal 100 punten',                  reward: 600,  check: () => best >= 100 },
+  { id: 'coins100', name: 'Spaarpot',      desc: 'Verzamel 100 munten totaal',       reward: 40,   check: () => stats.totalCoins >= 100 },
+  { id: 'coins500', name: 'Goudkoorts',    desc: 'Verzamel 500 munten totaal',       reward: 100,  check: () => stats.totalCoins >= 500 },
+  { id: 'coins2k',  name: 'Schatkist',     desc: 'Verzamel 2.000 munten totaal',     reward: 250,  check: () => stats.totalCoins >= 2000 },
+  { id: 'coins10k', name: 'Miljonair',     desc: 'Verzamel 10.000 munten totaal',    reward: 1000, check: () => stats.totalCoins >= 10000 },
+  { id: 'games25',  name: 'Doorzetter',    desc: 'Speel 25 rondes',                  reward: 50,   check: () => stats.games >= 25 },
+  { id: 'games100', name: 'Verslaafd',     desc: 'Speel 100 rondes',                 reward: 200,  check: () => stats.games >= 100 },
+  { id: 'games500', name: 'Veteraan',      desc: 'Speel 500 rondes',                 reward: 800,  check: () => stats.games >= 500 },
+  { id: 'power10',  name: 'Krachtpatser',  desc: 'Gebruik 10 power-ups',             reward: 60,   check: () => stats.powerups >= 10 },
+  { id: 'power50',  name: 'Power-junkie',  desc: 'Gebruik 50 power-ups',             reward: 220,  check: () => stats.powerups >= 50 },
+  { id: 'allmodes', name: 'Allrounder',    desc: 'Haal 10+ in elke modus',           reward: 350,  check: () => bests.classic >= 10 && bests.chaos >= 10 && bests.time >= 10 },
+  { id: 'skins5',   name: 'Modekoning',    desc: 'Bezit 5 skins',                    reward: 200,  check: () => ownedSkins.length >= 5 },
+  { id: 'themes5',  name: 'Wereldreiziger',desc: 'Bezit 5 thema\'s',                 reward: 200,  check: () => ownedThemes.length >= 5 },
+  { id: 'collectall',name:'Complete set',  desc: 'Bezit alle skins én thema\'s',     reward: 1500, check: () => ownedSkins.length >= Object.keys(SKINS).length && ownedThemes.length >= Object.keys(THEMES).length },
 ];
 function checkAchievements() {
-  let earned = false;
+  let unlockedNew = false;
   for (const a of ACHIEVEMENTS) {
     if (achievements.indexOf(a.id) === -1 && a.check()) {
-      achievements.push(a.id);
-      coins += a.reward;
-      earned = true;
-      queueToast(a);
+      achievements.push(a.id); // ontgrendeld (nog niet geclaimd)
+      unlockedNew = true;
+      queueToast({ name: 'Prestatie ontgrendeld! 🏆', desc: a.name + ' — claim je beloning', reward: a.reward });
     }
   }
   persist();
-  if (earned) updateCoinUI();
+  if (unlockedNew) updateAchBadge();
+}
+function claimAchievement(id) {
+  if (achievements.indexOf(id) === -1 || achievementsClaimed.indexOf(id) !== -1) return;
+  const a = ACHIEVEMENTS.find(x => x.id === id); if (!a) return;
+  achievementsClaimed.push(id);
+  coins += a.reward; updateCoinUI();
+  sfx('unlock'); haptic([15, 30, 15]);
+  queueToast({ name: 'Beloning geclaimd! 🏆', desc: a.name, reward: a.reward });
+  persist();
+  renderAchievements(); updateAchBadge();
+}
+// telt hoeveel prestaties klaar zijn om te claimen
+function claimableAchCount() {
+  let n = 0;
+  for (const id of achievements) if (achievementsClaimed.indexOf(id) === -1) n++;
+  return n;
+}
+function updateAchBadge() {
+  const b = document.getElementById('ach-badge');
+  if (!b) return;
+  const n = claimableAchCount();
+  if (n > 0) { b.textContent = n; b.classList.remove('hidden'); } else b.classList.add('hidden');
 }
 
 // ====================== MISSIES ======================
+// Moeilijker, claimbaar (niet automatisch), en elke 4 uur een nieuwe set.
+const MISSION_REFRESH_MS = 4 * 60 * 60 * 1000;
 const MISSION_TEMPLATES = [
-  { type: 'coins', label: 'Verzamel %d munten',          opts: [40, 70, 100], reward: [30, 50, 70] },
-  { type: 'power', label: 'Gebruik %d power-ups',         opts: [2, 3, 5],     reward: [40, 60, 90] },
-  { type: 'score', label: 'Haal %d punten in één ronde',  opts: [8, 15, 25],   reward: [40, 70, 110] },
-  { type: 'games', label: 'Speel %d rondes',              opts: [3, 5, 10],    reward: [25, 40, 70] },
+  { type: 'coins', label: 'Verzamel %d munten',          opts: [80, 140, 220],  reward: [60, 110, 180] },
+  { type: 'power', label: 'Gebruik %d power-ups',         opts: [4, 7, 12],      reward: [80, 130, 220] },
+  { type: 'score', label: 'Haal %d punten in één ronde',  opts: [15, 25, 40],    reward: [100, 170, 280] },
+  { type: 'games', label: 'Speel %d rondes',              opts: [6, 12, 20],     reward: [60, 110, 180] },
 ];
 function genMission() {
   const t = MISSION_TEMPLATES[(Math.random()*MISSION_TEMPLATES.length)|0];
   const i = (Math.random()*t.opts.length)|0;
-  return { type: t.type, target: t.opts[i], progress: 0, reward: t.reward[i], done: false, label: t.label.replace('%d', t.opts[i]) };
+  return { type: t.type, target: t.opts[i], progress: 0, reward: t.reward[i], done: false, claimed: false, label: t.label.replace('%d', t.opts[i]) };
 }
-function ensureMissions() { while (missions.length < 3) missions.push(genMission()); }
+function refreshMissionsIfDue() {
+  const now = Date.now();
+  if (!missionsTime || missions.length < 3 || (now - missionsTime) >= MISSION_REFRESH_MS) {
+    missions = [genMission(), genMission(), genMission()];
+    missionsTime = now;
+    persist();
+  }
+}
+function ensureMissions() { refreshMissionsIfDue(); } // compat
 function missionProgress(type, amount) {
   for (const m of missions) {
-    if (m.done || m.type !== type) continue;
+    if (m.claimed || m.done || m.type !== type) continue;
     m.progress += amount;
-    if (m.progress >= m.target) completeMission(m);
+    if (m.progress >= m.target) { m.progress = m.target; m.done = true; }
   }
   refreshMissionsUI();
 }
 function missionScore(sc) {
   for (const m of missions) {
-    if (m.done || m.type !== 'score') continue;
+    if (m.claimed || m.done || m.type !== 'score') continue;
     if (sc > m.progress) m.progress = Math.min(sc, m.target);
-    if (sc >= m.target) completeMission(m);
+    if (sc >= m.target) { m.progress = m.target; m.done = true; }
   }
 }
-function completeMission(m) {
-  if (m.done) return;
-  m.done = true; m.progress = m.target;
+function claimMission(idx) {
+  const m = missions[idx];
+  if (!m || !m.done || m.claimed) return;
+  m.claimed = true;
   coins += m.reward; updateCoinUI();
-  queueToast({ name: 'Missie voltooid! 🎯', desc: m.label, reward: m.reward });
-  setTimeout(() => {
-    const idx = missions.indexOf(m);
-    if (idx !== -1) { missions.splice(idx, 1); ensureMissions(); persist(); refreshMissionsUI(); }
-  }, 1600);
+  sfx('unlock'); haptic([15, 30, 15]);
+  queueToast({ name: 'Missie geclaimd! 🎯', desc: m.label, reward: m.reward });
+  persist();
+  renderMissions();
+}
+function missionCountdownText() {
+  const left = Math.max(0, MISSION_REFRESH_MS - (Date.now() - missionsTime));
+  const h = Math.floor(left / 3600000), mm = Math.floor((left % 3600000) / 60000);
+  return '🕒 Nieuwe missies over ' + h + 'u ' + mm + 'm';
 }
 function refreshMissionsUI() {
   const scr = document.getElementById('missions');
@@ -726,9 +852,36 @@ function claimDaily() {
   queueToast({ name: 'Dagelijkse bonus 🎁', desc: 'Dag-reeks: ' + stats.streak + ' dag' + (stats.streak === 1 ? '' : 'en'), reward: bonus });
 }
 
+// ====================== DAGELIJKSE UITDAGING ======================
+const DAILY_CHALLENGES = [
+  { mode: 'classic', diff: 'hard',   target: 12, reward: 200, label: 'Klassiek · Moeilijk: haal %d punten' },
+  { mode: 'chaos',   diff: 'normal', target: 15, reward: 220, label: 'Chaos: haal %d punten' },
+  { mode: 'time',    diff: 'normal', target: 25, reward: 240, label: 'Time Attack: haal %d punten' },
+  { mode: 'classic', diff: 'normal', target: 30, reward: 200, label: 'Klassiek: haal %d punten' },
+  { mode: 'chaos',   diff: 'hard',   target: 10, reward: 260, label: 'Chaos · Moeilijk: haal %d punten' },
+  { mode: 'time',    diff: 'hard',   target: 18, reward: 260, label: 'Time · Moeilijk: haal %d punten' },
+  { mode: 'classic', diff: 'easy',   target: 40, reward: 180, label: 'Klassiek · Makkelijk: haal %d punten' },
+];
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+function dayIndex() { const d = new Date(); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000); }
+function todaysChallenge() { return DAILY_CHALLENGES[dayIndex() % DAILY_CHALLENGES.length]; }
+function dcDoneToday() { return stats.dcDate === todayKey(); }
+function checkDailyChallenge() {
+  if (dcDoneToday()) return;
+  const ch = todaysChallenge();
+  if (mode === ch.mode && diff === ch.diff && score >= ch.target) {
+    stats.dcDate = todayKey();
+    coins += ch.reward; updateCoinUI();
+    sfx('medal'); haptic([20, 40, 20]);
+    queueToast({ name: 'Daguitdaging voltooid! 📅', desc: ch.label.replace('%d', ch.target), reward: ch.reward });
+    persist();
+  }
+}
+
 // ====================== DEELTJES & FEEDBACK ======================
 function spawnParticles(x, y, n, opts) {
   opts = opts || {};
+  if (reducedMotion) n = Math.ceil(n * 0.3); // minder beweging -> minder deeltjes
   for (let i = 0; i < n; i++) {
     const ang = opts.ang != null ? opts.ang + (Math.random()-0.5)*(opts.spread||Math.PI*2) : Math.random()*Math.PI*2;
     const spd = (opts.spdMin||0.5) + Math.random()*((opts.spdMax||3)-(opts.spdMin||0.5));
@@ -789,10 +942,11 @@ function reset() {
   runCoins = 0;
   lastGapCenter = null;
   particles = []; popups = []; shake = 0;
-  shieldActive = false; magnetTimer = 0; doubleTimer = 0; invulnTimer = 0; slowTimer = 0;
+  shieldActive = false; magnetTimer = 0; doubleTimer = 0; invulnTimer = 0; starTimer = 0;
   timeLeft = (mode === 'time') ? 60 * 60 : 0; // 60 seconden
   revivedThisRun = false; runCounted = false;
   floatCoins = []; rushTimer = 0; rushCooldown = 480; banner = null;
+  trail = [];
 }
 function spawnBanner(text) { banner = { text: text, life: 110 }; }
 
@@ -932,13 +1086,23 @@ function endRun(reason) {
   if (score > best) best = score;
   if (bests[mode] == null) bests[mode] = 0;
   if (score > bests[mode]) bests[mode] = score;
+  if (bestsDiff[diff] == null) bestsDiff[diff] = 0;
+  if (score > bestsDiff[diff]) bestsDiff[diff] = score;
   if (!runCounted) { stats.games++; missionProgress('games', 1); runCounted = true; } // één ronde, ook na revive
   missionScore(score);
+  checkDailyChallenge();
   checkAchievements(); // werkt stats bij, kent beloningen toe én slaat op
   document.getElementById('final-score').textContent = score;
   document.getElementById('best-score').textContent = best;
   document.getElementById('run-coins').textContent = runCoins;
   document.getElementById('menu-best').textContent = best;
+  document.getElementById('go-mode').textContent = MODE_LABELS[mode] + ' · ' + DIFF_LABELS[diff] + ' — beste ' + (bests[mode] || 0);
+  // volgende medaille
+  const thresholds = [['bronze', 5], ['silver', 15], ['gold', 30], ['platinum', 50]];
+  const next = thresholds.find(t => score < t[1]);
+  const goNext = document.getElementById('go-next');
+  if (next) goNext.textContent = 'Nog ' + (next[1] - score) + ' tot ' + next[0] + ' 🏅';
+  else goNext.textContent = 'Platina behaald! 🏅';
   updateCoinUI();
   // medaille
   const tier = medalTier(score);
@@ -985,6 +1149,7 @@ function toMenu() {
   document.getElementById('paused').classList.add('hidden');
   document.getElementById('pause-btn').classList.add('hidden');
   menuEl.classList.remove('hidden');
+  updateAchBadge(); updateDailyBadge();
 }
 
 // ====================== TEKENEN ======================
@@ -1003,6 +1168,7 @@ function drawBackground() {
   else if (selectedTheme === 'ocean') drawBgOcean();
   else if (selectedTheme === 'jungle') drawBgJungle();
   else if (selectedTheme === 'egypt') drawBgEgypt();
+  else if (selectedTheme === 'winter') drawBgWinter();
   else if (selectedTheme === 'volcano') drawBgVolcano();
   else if (selectedTheme === 'neon') drawBgNeon();
   else drawBgClassic();
@@ -1125,6 +1291,7 @@ function drawGround() {
   else if (selectedTheme === 'ocean') drawGroundOcean();
   else if (selectedTheme === 'jungle') drawGroundJungle();
   else if (selectedTheme === 'egypt') drawGroundEgypt();
+  else if (selectedTheme === 'winter') drawGroundWinter();
   else if (selectedTheme === 'volcano') drawGroundVolcano();
   else if (selectedTheme === 'neon') drawGroundNeon();
   else drawGroundClassic();
@@ -1184,6 +1351,7 @@ function drawPipes() {
   else if (selectedTheme === 'ocean') drawPipesOcean();
   else if (selectedTheme === 'jungle') drawPipesJungle();
   else if (selectedTheme === 'egypt') drawPipesEgypt();
+  else if (selectedTheme === 'winter') drawPipesWinter();
   else if (selectedTheme === 'volcano') drawPipesVolcano();
   else if (selectedTheme === 'neon') drawPipesNeon();
   else drawPipesClassic();
@@ -1566,6 +1734,64 @@ function drawPipesEgypt() {
   }
 }
 
+// ---------- WINTER ----------
+function drawBgWinter() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#d6ecf7'); g.addColorStop(0.6, '#aed6ec'); g.addColorStop(1, '#8fc2e0');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // bleke zon
+  ctx.save(); ctx.shadowColor = 'rgba(255,255,255,0.9)'; ctx.shadowBlur = 30;
+  ctx.fillStyle = '#f3fbff'; ctx.beginPath(); ctx.arc(W-72, 92, 30, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+  // besneeuwde heuvels
+  const y0 = H - 50;
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.beginPath(); ctx.moveTo(0, y0);
+  ctx.quadraticCurveTo(W*0.25, y0-60, W*0.5, y0-22);
+  ctx.quadraticCurveTo(W*0.75, y0-66, W, y0-26);
+  ctx.lineTo(W, y0); ctx.closePath(); ctx.fill();
+  // vallende sneeuw
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  for (let i = 0; i < 34; i++) {
+    const seed = i * 71;
+    const sx = (seed % W) + Math.sin((fFrame * 0.02) + i) * 12;
+    const sy = (fFrame * (0.7 + (i % 4) * 0.18) + seed) % (H + 10);
+    const r = 1.2 + (i % 3) * 0.7;
+    ctx.beginPath(); ctx.arc((sx % W + W) % W, sy, r, 0, Math.PI*2); ctx.fill();
+  }
+}
+function drawGroundWinter() {
+  const gy = H - 50;
+  const g = ctx.createLinearGradient(0, gy, 0, H);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#d6e6f0');
+  ctx.fillStyle = g; ctx.fillRect(0, gy, W, 50);
+  ctx.fillStyle = 'rgba(150,190,220,0.5)'; ctx.fillRect(0, gy, W, 4);
+  // sneeuwbultjes
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  const off = (fFrame * (settings ? settings.speed : 2)) % 40;
+  for (let x = -off; x < W; x += 40) { ctx.beginPath(); ctx.arc(x, gy+6, 9, Math.PI, 0); ctx.fill(); }
+}
+function drawPipesWinter() {
+  const w = 60;
+  for (const p of pipes) {
+    const by = p.top + p.gap;
+    const seg = (y, h) => {
+      if (h <= 0) return;
+      const g = ctx.createLinearGradient(p.x, 0, p.x+w, 0);
+      g.addColorStop(0, '#bfe6ff'); g.addColorStop(0.5, '#8fcdef'); g.addColorStop(1, '#6fb4dd');
+      ctx.fillStyle = g; ctx.fillRect(p.x, y, w, h);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(p.x+8, y, 6, h); // glans
+    };
+    seg(0, p.top - 14); seg(by + 14, H - (by + 14));
+    // sneeuwkap op de uiteinden
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(p.x-5, p.top - 14, w+10, 14);
+    ctx.beginPath(); ctx.moveTo(p.x-5, p.top); ctx.quadraticCurveTo(p.x+w/2, p.top+8, p.x+w+5, p.top); ctx.lineTo(p.x+w+5, p.top-2); ctx.lineTo(p.x-5, p.top-2); ctx.fill();
+    ctx.fillRect(p.x-5, by, w+10, 14);
+    ctx.beginPath(); ctx.moveTo(p.x-5, by); ctx.quadraticCurveTo(p.x+w/2, by-8, p.x+w+5, by); ctx.lineTo(p.x+w+5, by+2); ctx.lineTo(p.x-5, by+2); ctx.fill();
+  }
+}
+
 // stenen muur met metselwerk
 function stoneFill(x, y, w, h) {
   if (h <= 0) return;
@@ -1663,10 +1889,14 @@ function drawPowerIcon(cx, cy, type) {
     ctx.fillStyle = col; ctx.fillRect(-6.5, 5, 3.2, 2); ctx.fillRect(3.3, 5, 3.2, 2);
   } else if (type === 'double') {
     ctx.font = 'bold 13px Segoe UI'; ctx.fillText('2×', 0, 1);
-  } else { // slow: klok
-    ctx.lineWidth = 2; ctx.strokeStyle = '#fff';
-    ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI*2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -5); ctx.moveTo(0, 0); ctx.lineTo(4, 1); ctx.stroke();
+  } else { // star
+    ctx.fillStyle = '#fff'; ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a1 = -Math.PI/2 + i * 2*Math.PI/5, a2 = a1 + Math.PI/5;
+      ctx.lineTo(Math.cos(a1)*8, Math.sin(a1)*8);
+      ctx.lineTo(Math.cos(a2)*3.5, Math.sin(a2)*3.5);
+    }
+    ctx.closePath(); ctx.fill();
   }
   ctx.restore();
 }
@@ -1877,6 +2107,26 @@ function drawBirdShape(c, skin, anim) {
     // oog met verticale pupil
     c.fillStyle = '#ffd23f'; c.beginPath(); c.arc(7, -4, 4, 0, Math.PI*2); c.fill();
     c.fillStyle = '#000'; c.save(); c.translate(7.5, -4); c.scale(0.45, 1); c.beginPath(); c.arc(0, 0, 2.6, 0, Math.PI*2); c.fill(); c.restore();
+  } else if (skin === 'penguin') {
+    // flipper achter (klapt)
+    c.save(); c.translate(-2, 0); c.rotate(flap * 0.5);
+    c.fillStyle = '#1c1c22';
+    c.beginPath(); c.ellipse(-12, 2, 8, 4, 0.4, 0, Math.PI*2); c.fill();
+    c.restore();
+    // lichaam (zwart)
+    c.fillStyle = '#26262e'; c.beginPath(); c.arc(0, 0, r, 0, Math.PI*2); c.fill();
+    c.strokeStyle = '#000'; c.lineWidth = 2; c.stroke();
+    // witte buik
+    c.fillStyle = '#fff'; c.beginPath(); c.ellipse(3, 3, r*0.62, r*0.78, 0, 0, Math.PI*2); c.fill();
+    // ogen
+    c.fillStyle = '#fff'; c.beginPath(); c.arc(6, -5, 4, 0, Math.PI*2); c.arc(12, -5, 4, 0, Math.PI*2); c.fill();
+    c.fillStyle = '#000'; c.beginPath(); c.arc(7, -5, 2, 0, Math.PI*2); c.arc(12, -5, 2, 0, Math.PI*2); c.fill();
+    // snavel
+    c.fillStyle = '#ff9d2e'; c.beginPath(); c.moveTo(10, -1); c.lineTo(20, 2); c.lineTo(10, 5); c.fill();
+    // pootjes
+    c.fillStyle = '#ff9d2e';
+    c.beginPath(); c.moveTo(-2, r-2); c.lineTo(-7, r+3); c.lineTo(1, r+1); c.fill();
+    c.beginPath(); c.moveTo(5, r-2); c.lineTo(2, r+3); c.lineTo(9, r+1); c.fill();
   } else if (skin === 'angel') {
     // wapperende witte veren­vleugel achter
     c.save(); c.translate(-2, 0); c.rotate(flap * 0.5);
@@ -1967,6 +2217,16 @@ function drawBird() {
     ctx.beginPath(); ctx.arc(0, 0, (bird.r + 7) * pulse, 0, Math.PI*2); ctx.fill(); ctx.stroke();
     ctx.restore();
   }
+  // ster-aura (onkwetsbaar): kleurige gloeiring + sterretjes
+  if (starTimer > 0) {
+    ctx.save();
+    ctx.translate(bird.x, y);
+    const hue = (fFrame * 8) % 360;
+    ctx.shadowColor = 'hsl(' + hue + ',100%,60%)'; ctx.shadowBlur = 14;
+    ctx.strokeStyle = 'hsl(' + hue + ',100%,65%)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, bird.r + 6 + Math.sin(fFrame*0.4)*1.5, 0, Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawReady() {
@@ -2016,7 +2276,7 @@ function drawHud() {
   if (shieldActive) active.push({ c: POWER_COLORS.shield, t: -1, label: 'shield' });
   if (magnetTimer > 0) active.push({ c: POWER_COLORS.magnet, t: magnetTimer / POWER_DUR, label: 'magnet' });
   if (doubleTimer > 0) active.push({ c: POWER_COLORS.double, t: doubleTimer / POWER_DUR, label: 'double' });
-  if (slowTimer > 0) active.push({ c: POWER_COLORS.slow, t: slowTimer / SLOW_DUR, label: 'slow' });
+  if (starTimer > 0) active.push({ c: POWER_COLORS.star, t: starTimer / STAR_DUR, label: 'star' });
   let py = 58 + uiTop; // onder de pauzeknop
   for (const a of active) {
     const px = W - 20;
@@ -2047,17 +2307,18 @@ function update() {
     frame++;
     if (mode === 'time') { timeLeft--; if (timeLeft <= 0) { timeLeft = 0; endRun('time'); return; } }
     curSpeed = settings.speed + Math.min(score * 0.045, 1.6); // opbouw
+    // vogelspoor
+    if (trailOn) trail.push({ x: bird.x - 4, y: bird.y + 3, life: 16 });
+    for (let i = trail.length - 1; i >= 0; i--) { const t = trail[i]; t.x -= curSpeed; t.life--; if (t.life <= 0) trail.splice(i, 1); }
     if (magnetTimer > 0) magnetTimer--;
     if (doubleTimer > 0) doubleTimer--;
     if (invulnTimer > 0) invulnTimer--;
-    if (slowTimer > 0) slowTimer--;
-    const ts = slowTimer > 0 ? SLOW_FACTOR : 1; // tijdfactor (slow-mo vertraagt alles gelijk)
-    curSpeed *= ts;
-    bird.vy += settings.gravity * ts;
+    if (starTimer > 0) starTimer--;
+    bird.vy += settings.gravity;
     if (bird.vy > settings.maxVy) bird.vy = settings.maxVy;
-    bird.y += bird.vy * ts;
+    bird.y += bird.vy;
     const targetRot = Math.max(-0.5, Math.min(1.4, bird.vy * 0.09));
-    bird.rot += (targetRot - bird.rot) * 0.15 * ts;
+    bird.rot += (targetRot - bird.rot) * 0.15;
 
     if (frame % settings.interval === 0) spawnPipe();
 
@@ -2092,12 +2353,19 @@ function update() {
           activatePower(p.power, cx, cy); p.power = null;
         }
       }
-      // botsing met buis
-      if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + w) {
-        if (bird.y - bird.r < p.top || bird.y + bird.r > p.top + p.gap) handleHit();
+      // botsing met buis (hulpmodus = iets ruimere marge)
+      const cr = bird.r - (assistOn ? 4 : 0);
+      if (bird.x + cr > p.x && bird.x - cr < p.x + w) {
+        if (bird.y - cr < p.top || bird.y + cr > p.top + p.gap) {
+          if (starTimer > 0) {
+            if (!p.passed) { p.passed = true; score++; }
+            p.smashed = true; shake = 6; sfx('hit'); haptic(15);
+            spawnParticles(p.x + w/2, bird.y, 16, { colors: ['#ffce2e','#ff6b6b','#36e0ff','#b06bff','#fff'], spdMin: 2, spdMax: 6.5, g: 0.12, lifeMin: 18, lifeMax: 38, sizeMin: 1.5, sizeMax: 4.5 });
+          } else handleHit();
+        }
       }
     }
-    pipes = pipes.filter(p => p.x + w > -10);
+    pipes = pipes.filter(p => p.x + w > -10 && !p.smashed);
 
     // ----- Muntenregen-event -----
     if (rushTimer > 0) {
@@ -2114,12 +2382,18 @@ function update() {
       spawnBanner('MUNTENREGEN!');
       sfx('power');
     }
-    const fr = magnetTimer > 0 ? 64 : (bird.r + 10);
+    const pull = magnetTimer > 0;
     for (const fc of floatCoins) {
       if (fc.taken) continue;
       fc.x -= curSpeed;
+      // magneet: zuig zwevende munten actief naar de vogel toe
+      if (pull) {
+        const mx = bird.x - fc.x, my = bird.y - fc.y;
+        const d = Math.hypot(mx, my) || 1;
+        if (d < 180) { fc.x += (mx / d) * 5; fc.y += (my / d) * 5; }
+      }
       const dx = bird.x - fc.x, dy = bird.y - fc.y;
-      if (dx*dx + dy*dy < fr*fr) {
+      if (dx*dx + dy*dy < (bird.r + 11) * (bird.r + 11)) {
         fc.taken = true;
         const val = settings.coinValue * (doubleTimer > 0 ? 2 : 1);
         coins += val; runCoins += val; stats.totalCoins += val;
@@ -2132,7 +2406,9 @@ function update() {
 
     if (bird.y + bird.r > groundY) {
       bird.y = groundY - bird.r;
-      if (mode === 'time') {
+      if (starTimer > 0) {
+        bird.vy = settings.jump * 0.9; // stuiter tijdens onkwetsbaarheid
+      } else if (mode === 'time') {
         bird.vy = settings.jump;
         if (invulnTimer <= 0) { timeLeft = Math.max(0, timeLeft - 180); invulnTimer = 45; sfx('hit'); spawnPopup(bird.x, bird.y - 18, '-3s', '#ff6b6b'); }
       } else die();
@@ -2142,7 +2418,7 @@ function update() {
 }
 
 function render() {
-  const shaking = shake > 0.3;
+  const shaking = shake > 0.3 && !reducedMotion;
   if (shaking) {
     ctx.save();
     ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
@@ -2163,10 +2439,10 @@ function render() {
     drawFloatCoins();
   }
   drawGround();
+  drawTrail();
   if (state === 'ready' || state === 'playing' || state === 'dead') drawBird();
   drawParticles();
   if (shaking) ctx.restore();
-  if (slowTimer > 0) { ctx.fillStyle = 'rgba(90,209,209,0.10)'; ctx.fillRect(0, 0, W, H); }
   drawReady();
   drawHud();
   drawScore();
@@ -2179,6 +2455,18 @@ function render() {
     ctx.strokeText(banner.text, W/2, by); ctx.fillText(banner.text, W/2, by);
     ctx.globalAlpha = 1;
   }
+}
+
+function drawTrail() {
+  if (!trail.length) return;
+  const col = SKIN_TRAIL[selectedSkin] || '#ffffff';
+  for (const t of trail) {
+    const k = t.life / 16;
+    ctx.globalAlpha = Math.max(0, k) * 0.55;
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(t.x, t.y, 4 * k + 1, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawFloatCoins() {
@@ -2297,6 +2585,15 @@ function drawThemePreview(c, theme) {
     c.fillStyle = '#cfae72'; c.fillRect(16, 0, 12, 17); c.fillRect(16, 40, 12, h-40);
     c.fillStyle = '#e8c44a'; c.fillRect(16, 16, 12, 3); c.fillRect(16, 40, 12, 3);
     c.fillStyle = '#e8c98a'; c.fillRect(0, h-8, w, 8);
+  } else if (theme === 'winter') {
+    const g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#d6ecf7'); g.addColorStop(1, '#8fc2e0');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#fff';
+    for (let i = 0; i < 9; i++) c.fillRect((i*37) % w, (i*53) % (h-10), 2, 2);
+    c.fillStyle = '#8fcdef'; c.fillRect(16, 0, 12, 17); c.fillRect(16, 40, 12, h-40);
+    c.fillStyle = '#fff'; c.fillRect(15, 15, 14, 4); c.fillRect(15, 40, 14, 4);
+    c.fillStyle = '#eaf4fb'; c.fillRect(0, h-8, w, 8);
   } else if (theme === 'volcano') {
     const g = c.createLinearGradient(0, 0, 0, h);
     g.addColorStop(0, '#2a0a0a'); g.addColorStop(1, '#8a2a10');
@@ -2435,7 +2732,10 @@ const settingsEl = document.getElementById('settings');
 function refreshToggles() {
   document.getElementById('toggle-sound').classList.toggle('on', soundOn);
   document.getElementById('toggle-music').classList.toggle('on', musicOn);
+  document.getElementById('toggle-trail').classList.toggle('on', trailOn);
   document.getElementById('toggle-haptics').classList.toggle('on', hapticsOn);
+  document.getElementById('toggle-reduce').classList.toggle('on', reducedMotion);
+  document.getElementById('toggle-assist').classList.toggle('on', assistOn);
 }
 document.getElementById('settings-btn').addEventListener('click', () => {
   menuEl.classList.add('hidden'); settingsEl.classList.remove('hidden'); refreshToggles();
@@ -2452,9 +2752,22 @@ document.getElementById('toggle-music').addEventListener('click', () => {
   refreshToggles();
   if (musicOn) { ensureAudio(); startMusic(); } else stopMusic();
 });
+document.getElementById('toggle-trail').addEventListener('click', () => {
+  trailOn = !trailOn; localStorage.setItem('flappyTrail', trailOn ? '1' : '0');
+  refreshToggles();
+});
 document.getElementById('toggle-haptics').addEventListener('click', () => {
   hapticsOn = !hapticsOn; localStorage.setItem('flappyHaptics', hapticsOn ? '1' : '0');
   refreshToggles(); haptic(25);
+});
+document.getElementById('toggle-reduce').addEventListener('click', () => {
+  reducedMotion = !reducedMotion; localStorage.setItem('flappyReduce', reducedMotion ? '1' : '0');
+  if (reducedMotion) shake = 0;
+  refreshToggles();
+});
+document.getElementById('toggle-assist').addEventListener('click', () => {
+  assistOn = !assistOn; localStorage.setItem('flappyAssist', assistOn ? '1' : '0');
+  refreshToggles();
 });
 
 // Prestaties
@@ -2462,17 +2775,28 @@ const achEl = document.getElementById('achievements');
 function renderAchievements() {
   const list = document.getElementById('ach-list');
   list.innerHTML = '';
-  for (const a of ACHIEVEMENTS) {
-    const done = achievements.indexOf(a.id) !== -1;
+  // claimbare bovenaan, dan vergrendelde, dan geclaimde
+  const order = ACHIEVEMENTS.slice().sort((a, b) => {
+    const rank = x => achievementsClaimed.indexOf(x.id) !== -1 ? 2 : (achievements.indexOf(x.id) !== -1 ? 0 : 1);
+    return rank(a) - rank(b);
+  });
+  for (const a of order) {
+    const unlocked = achievements.indexOf(a.id) !== -1;
+    const claimed = achievementsClaimed.indexOf(a.id) !== -1;
     const it = document.createElement('div');
-    it.className = 'ach-item' + (done ? ' done' : '');
+    it.className = 'ach-item' + (claimed ? ' done' : (unlocked ? ' claimable' : ''));
+    let right;
+    if (claimed) right = '<div class="ach-reward">✓</div>';
+    else if (unlocked) right = '<button class="mission-claim" data-id="' + a.id + '">Claim +' + a.reward + '</button>';
+    else right = '<div class="ach-reward">+' + a.reward + ' 🪙</div>';
     it.innerHTML =
-      '<div class="ach-icon">' + (done ? '🏆' : '🔒') + '</div>' +
+      '<div class="ach-icon">' + (claimed ? '🏆' : (unlocked ? '🎁' : '🔒')) + '</div>' +
       '<div class="ach-info"><div class="ach-name">' + escapeHtml(a.name) + '</div>' +
       '<div class="ach-desc">' + escapeHtml(a.desc) + '</div></div>' +
-      '<div class="ach-reward">+' + a.reward + ' 🪙</div>';
+      right;
     list.appendChild(it);
   }
+  list.querySelectorAll('.mission-claim').forEach(b => { b.onclick = () => { ensureAudio(); claimAchievement(b.dataset.id); }; });
 }
 document.getElementById('ach-btn').addEventListener('click', () => {
   menuEl.classList.add('hidden'); achEl.classList.remove('hidden'); renderAchievements();
@@ -2484,31 +2808,79 @@ document.getElementById('ach-back').addEventListener('click', () => {
 // Missies
 const missionsEl = document.getElementById('missions');
 function renderMissions() {
+  refreshMissionsIfDue();
+  const cd = document.getElementById('mission-countdown');
+  if (cd) cd.textContent = missionCountdownText();
   const list = document.getElementById('mission-list');
   list.innerHTML = '';
-  for (const m of missions) {
+  for (let i = 0; i < missions.length; i++) {
+    const m = missions[i];
     const pct = Math.min(100, Math.round(m.progress / m.target * 100));
     const it = document.createElement('div');
-    it.className = 'ach-item' + (m.done ? ' done' : '');
+    it.className = 'ach-item' + (m.claimed ? ' done' : '');
+    let right;
+    if (m.claimed) right = '<div class="ach-reward">✓</div>';
+    else if (m.done) right = '<button class="mission-claim" data-i="' + i + '">Claim +' + m.reward + '</button>';
+    else right = '<div class="ach-reward">+' + m.reward + ' 🪙</div>';
     it.innerHTML =
-      '<div class="ach-icon">' + (m.done ? '✅' : '🎯') + '</div>' +
+      '<div class="ach-icon">' + (m.claimed ? '✅' : (m.done ? '🎁' : '🎯')) + '</div>' +
       '<div class="ach-info"><div class="ach-name">' + escapeHtml(m.label) + '</div>' +
       '<div class="mbar"><div class="mbar-fill" style="width:' + pct + '%"></div></div>' +
       '<div class="ach-desc">' + Math.min(m.progress, m.target) + ' / ' + m.target + '</div></div>' +
-      '<div class="ach-reward">+' + m.reward + ' 🪙</div>';
+      right;
     list.appendChild(it);
   }
+  list.querySelectorAll('.mission-claim').forEach(b => { b.onclick = () => { ensureAudio(); claimMission(+b.dataset.i); }; });
 }
-document.getElementById('missions-btn').addEventListener('click', () => {
-  ensureMissions(); menuEl.classList.add('hidden'); missionsEl.classList.remove('hidden'); renderMissions();
-});
+let missionCdTimer = null;
+function openMissions() {
+  refreshMissionsIfDue();
+  menuEl.classList.add('hidden'); missionsEl.classList.remove('hidden'); renderMissions();
+  if (missionCdTimer) clearInterval(missionCdTimer);
+  missionCdTimer = setInterval(() => {
+    if (missionsEl.classList.contains('hidden')) { clearInterval(missionCdTimer); missionCdTimer = null; return; }
+    renderMissions();
+  }, 20000);
+}
+document.getElementById('missions-btn').addEventListener('click', openMissions);
 document.getElementById('missions-back').addEventListener('click', () => {
   missionsEl.classList.add('hidden'); menuEl.classList.remove('hidden');
+  if (missionCdTimer) { clearInterval(missionCdTimer); missionCdTimer = null; }
+});
+
+// Daguitdaging
+const dailyEl = document.getElementById('daily');
+function renderDaily() {
+  const ch = todaysChallenge(), done = dcDoneToday();
+  document.getElementById('daily-body').innerHTML =
+    '<div class="stat-row"><span>' + ch.label.replace('%d', ch.target) + '</span><b>+' + ch.reward + ' 🪙</b></div>' +
+    '<div class="stat-row"><span>Status</span><b style="color:' + (done ? '#5ec64a' : '#ffd54a') + '">' + (done ? '✓ Voltooid vandaag' : 'Nog te doen') + '</b></div>';
+  const sb = document.getElementById('daily-start');
+  sb.disabled = done; sb.textContent = done ? '✓ Voltooid vandaag' : '▶ Start uitdaging';
+}
+function updateDailyBadge() {
+  const b = document.getElementById('daily-badge'); if (!b) return;
+  b.classList.toggle('hidden', dcDoneToday());
+}
+document.getElementById('daily-btn').addEventListener('click', () => {
+  menuEl.classList.add('hidden'); dailyEl.classList.remove('hidden'); renderDaily();
+});
+document.getElementById('daily-back').addEventListener('click', () => {
+  dailyEl.classList.add('hidden'); menuEl.classList.remove('hidden');
+});
+document.getElementById('daily-start').addEventListener('click', () => {
+  const ch = todaysChallenge(); if (dcDoneToday()) return;
+  mode = ch.mode; diff = ch.diff;
+  document.querySelectorAll('#difficulty .diff-btn').forEach(x => x.classList.toggle('active', x.dataset.diff === diff));
+  document.querySelectorAll('#modesel .mode-btn').forEach(x => x.classList.toggle('active', x.dataset.mode === mode));
+  dailyEl.classList.add('hidden');
+  startGame();
 });
 
 // Onboarding / uitleg
 const tutorialEl = document.getElementById('tutorial');
 function enterMenuFlow() {
+  updateAchBadge(); updateDailyBadge();
   if (!stats.seenTutorial) {
     menuEl.classList.add('hidden');
     tutorialEl.classList.remove('hidden');
@@ -2538,6 +2910,10 @@ function renderStats() {
   html += row('Klassiek', bests.classic || 0);
   html += row('⚡ Chaos', bests.chaos || 0);
   html += row('⏱ Time Attack', bests.time || 0);
+  html += '<div class="stats-sub">Beste score per moeilijkheid</div>';
+  html += row('Makkelijk 🪙×1', bestsDiff.easy || 0);
+  html += row('Normaal 🪙×2', bestsDiff.normal || 0);
+  html += row('Moeilijk 🪙×3', bestsDiff.hard || 0);
   html += '<div class="stats-sub">Totaal</div>';
   html += row('Rondes gespeeld', stats.games || 0);
   html += row('Munten verdiend', stats.totalCoins || 0);
@@ -2551,6 +2927,28 @@ document.getElementById('stats-btn').addEventListener('click', () => {
 });
 document.getElementById('stats-back').addEventListener('click', () => {
   statsScreenEl.classList.add('hidden'); menuEl.classList.remove('hidden');
+});
+
+// Toppers / leaderboard
+const lbEl = document.getElementById('leaderboard');
+function renderLeaderboard() {
+  const rows = Object.keys(profiles).map(name => ({ name: name, best: (profiles[name] && profiles[name].best) || 0 }));
+  rows.sort((a, b) => b.best - a.best);
+  const body = document.getElementById('lb-body');
+  if (rows.length === 0) { body.innerHTML = '<p class="hint">Nog geen spelers.</p>'; return; }
+  const medals = ['🥇', '🥈', '🥉'];
+  body.innerHTML = rows.map((r, i) =>
+    '<div class="lb-row' + (r.name === activeProfile ? ' me' : '') + '">' +
+    '<span class="lb-rank">' + (medals[i] || (i + 1)) + '</span>' +
+    '<span class="lb-name">' + escapeHtml(r.name) + '</span>' +
+    '<span class="lb-score">' + r.best + '</span></div>'
+  ).join('');
+}
+document.getElementById('leaderboard-btn').addEventListener('click', () => {
+  menuEl.classList.add('hidden'); lbEl.classList.remove('hidden'); renderLeaderboard();
+});
+document.getElementById('lb-back').addEventListener('click', () => {
+  lbEl.classList.add('hidden'); menuEl.classList.remove('hidden');
 });
 
 document.querySelectorAll('#difficulty .diff-btn').forEach(b => {
